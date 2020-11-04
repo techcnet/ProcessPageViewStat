@@ -7,7 +7,7 @@
  * @author tech-c.net
  * @license Licensed under GNU/GPL v2
  * @link https://tech-c.net/posts/page-view-statistic-for-processwire/
- * @version 1.0.4
+ * @version 1.0.6
  * 
  * @see Forum Thread: https://processwire.com/talk/topic/24189-pageviewstatistic-for-processwire/
  * @see Donate: https://www.paypal.me/techcnet/0usd
@@ -30,7 +30,7 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
       'summary' => 'Logs page views of the CMS.',
       'href' => 'https://tech-c.net/posts/page-view-statistic-for-processwire/',
       'author' => 'tech-c.net',
-      'version' => 104,
+      'version' => 106,
       'icon' => 'signal',
       'autoload' => true,
       'singular' => true);
@@ -228,16 +228,16 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
 
     if ($vt != '') {
       $query = $this->database->prepare("INSERT INTO ".self::dbTableMain." (tm,vt,ip_id,country_id,browser_id,os_id,page_id,origin_id) VALUES (NOW(),:vt,:id_ip,:id_country,:id_browser,:id_os,:id_request,:id_origin)");
-      $query->bindValue(':vt', $vt, \PDO::PARAM_INT);
+      $query->bindValue(':vt', (int) $vt, \PDO::PARAM_INT);
     } else {
       $query = $this->database->prepare("INSERT INTO ".self::dbTableMain." (tm,ip_id,country_id,browser_id,os_id,page_id,origin_id) VALUES (NOW(),:id_ip,:id_country,:id_browser,:id_os,:id_request,:id_origin)");
     }
-    $query->bindValue(':id_ip', $id_ip, \PDO::PARAM_INT);
-    $query->bindValue(':id_country', $id_country, \PDO::PARAM_INT);
-    $query->bindValue(':id_browser', $id_browser, \PDO::PARAM_INT);
-    $query->bindValue(':id_os', $id_os, \PDO::PARAM_INT);
-    $query->bindValue(':id_request', $id_request, \PDO::PARAM_INT);
-    $query->bindValue(':id_origin', $id_origin, \PDO::PARAM_INT);
+    $query->bindValue(':id_ip', (int) $id_ip, \PDO::PARAM_INT);
+    $query->bindValue(':id_country', (int) $id_country, \PDO::PARAM_INT);
+    $query->bindValue(':id_browser', (int) $id_browser, \PDO::PARAM_INT);
+    $query->bindValue(':id_os', (int) $id_os, \PDO::PARAM_INT);
+    $query->bindValue(':id_request', (int) $id_request, \PDO::PARAM_INT);
+    $query->bindValue(':id_origin', (int) $id_origin, \PDO::PARAM_INT);
     if (!$query->execute()) {
       wire('log')->error($this->className.' INSERT '.self::dbTableMain.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
     }
@@ -765,10 +765,10 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
              "WHERE tm >= FROM_UNIXTIME(:utcfrom) AND tm < FROM_UNIXTIME(:utcto) ".
              "ORDER BY tm DESC LIMIT :start,:rowlimit";
       $query = $this->database->prepare($sql);
-      $query->bindValue(':utcfrom', $utcfrom, \PDO::PARAM_INT);
-      $query->bindValue(':utcto', $utcto, \PDO::PARAM_INT);
-      $query->bindValue(':start', $start, \PDO::PARAM_INT);
-      $query->bindValue(':rowlimit', $rowlimit, \PDO::PARAM_INT);
+      $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_INT);
+      $query->bindValue(':utcto', (int) $utcto, \PDO::PARAM_INT);
+      $query->bindValue(':start', (int) $start, \PDO::PARAM_INT);
+      $query->bindValue(':rowlimit', (int) $rowlimit, \PDO::PARAM_INT);
       if (!$query->execute()) {
         return;
       }
@@ -879,8 +879,8 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
       $sql = "SELECT DAY(CONVERT_TZ(tm,@@session.time_zone,:timeoffset)) as dt, COUNT(DISTINCT ip_id) AS totalcount FROM ".self::dbTableMain." WHERE tm >= FROM_UNIXTIME(:utcfrom) AND tm < FROM_UNIXTIME(:utcto) GROUP BY dt ASC";
       $query = $this->database->prepare($sql);
       $query->bindValue(':timeoffset', $timeoffset, \PDO::PARAM_STR);
-      $query->bindValue(':utcfrom', $utcfrom, \PDO::PARAM_INT);
-      $query->bindValue(':utcto', $utcto, \PDO::PARAM_INT);
+      $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_INT);
+      $query->bindValue(':utcto', (int) $utcto, \PDO::PARAM_INT);
       if (!$query->execute()) {
         return;
       }
@@ -934,8 +934,8 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
       $sql = "SELECT MONTH(CONVERT_TZ(tm,@@session.time_zone,:timeoffset)) as mt, COUNT(DISTINCT ip_id) AS totalcount FROM ".self::dbTableMain." WHERE tm >= FROM_UNIXTIME(:utcfrom) AND tm < FROM_UNIXTIME(:utcto) GROUP BY mt ASC";
       $query = $this->database->prepare($sql);
       $query->bindValue(':timeoffset', $timeoffset, \PDO::PARAM_STR);
-      $query->bindValue(':utcfrom', $utcfrom, \PDO::PARAM_INT);
-      $query->bindValue(':utcto', $utcto, \PDO::PARAM_INT);
+      $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_INT);
+      $query->bindValue(':utcto', (int) $utcto, \PDO::PARAM_INT);
       if (!$query->execute()) {
         return;
       }
@@ -956,7 +956,7 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
           $result .= '</div>';
         for ($i = 1; $i <= 12; $i++) {
           $result .= '<div class="pvs_tr">';
-            $result .= '<div class="pvs_td pvs_alr">'.date('F', mktime(0, 0, 0, $i)).'</div>';
+            $result .= '<div class="pvs_td pvs_alr">'.date('F', mktime(0, 0, 0, $i, 1, 1970)).'</div>';
             $totalcount = 0;
             foreach ($records as $record) {
               if ($record['mt'] == sprintf('%02d', $i)) {
