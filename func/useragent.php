@@ -3,14 +3,14 @@
 /*
 
 parseUserAgentString.php Class (With Bots)
-Version 1.22
+Version 1.27
 Written by Thomas Parkison.
 thomas.parkison@gmail.com
 
 */
 
 class parseUserAgentStringClass {
-	public $classVersion = "1.21";
+	public $classVersion = "1.27";
 
 	public $css = false;
 	public $css1 = false;
@@ -35,16 +35,15 @@ class parseUserAgentStringClass {
 	public $ie = false;
 	public $internetexplorer = false;
 	public $internetexplorerClone = false;
-	public $nextgenie = false;
-	public $nextgeninternetexplorer = false;
-	public $microsoftspartanie = false;
+	public $microsoftEdge = false;
+	public $edge = false;
+	public $chromeEdge = false;
 
 	public $safari = false;
 	public $opera = false;
 	public $linux = false;
 	public $bsd = false;
 	public $chromeos = false;
-	public $blackberry = false;
 
 	public $rawVersion = array();
 
@@ -64,14 +63,14 @@ class parseUserAgentStringClass {
 	public $includeWindowsName = true;
 	public $includeMacOSName = true;
 	public $treatClonesAsTheRealThing = true;
-	public $treatProjectSpartanInternetExplorerLikeLegacyInternetExplorer = false;
+	public $treatMicrosoftEdgeLikeLegacyInternetExplorer = false;
 
-	public $deviceTypeApp = "App";
-	public $deviceTypeBot = "Bot";
-	public $deviceTypeDownloader = "Downloader";
-	public $deviceTypeMobile = "Mobile";
+	public $deviceTypeApp = "app";
+	public $deviceTypeBot = "bot";
+	public $deviceTypeDownloader = "downloader";
+	public $deviceTypeMobile = "mobile";
 	public $deviceTypePC = "PC";
-	public $deviceTypeScript = "Script";
+	public $deviceTypeScript = "script";
 
 	function StringContains($haystack, $needle) {
 		if (stristr($haystack, $needle) === FALSE) return false;
@@ -415,9 +414,9 @@ class parseUserAgentStringClass {
 				$this->internetexplorer = true;
 			}
 		}
-		# For detecting Microsoft Internet Explorer 12 (Project Spartan).
+		# For detecting Microsoft Internet Explorer 12 (Microsoft Edge).
 		elseif ($this->mypreg_match('%Mozilla/.* \(.*\) AppleWebKit/.* \(KHTML, like Gecko\) Chrome/[0-9.]* Safari/[0-9.]* Edge/([0-9.]*)%i', $userAgent, $matches)) {
-			$browserName = "Microsoft Internet Explorer 12 (Project Spartan)";
+			$browserName = "Microsoft Internet Explorer 12 (Microsoft Edge)";
 
 			if ($this->StringContains($matches[1], ".")) {
 				$t = explode(".", trim($matches[1]));
@@ -441,11 +440,10 @@ class parseUserAgentStringClass {
 			$this->backgroundsounds = true;
 			$this->java = true;
 			$this->css1 = true;
-			$this->nextgenie = true;
-			$this->nextgeninternetexplorer = true;
-			$this->microsoftspartanie = true;
+			$this->microsoftEdge = true;
+			$this->edge = true;
 
-			if ($this->treatProjectSpartanInternetExplorerLikeLegacyInternetExplorer) {
+			if ($this->treatMicrosoftEdgeLikeLegacyInternetExplorer) {
 				$this->ie = true;
 				$this->internetexplorer = true;
 			}
@@ -1507,6 +1505,36 @@ class parseUserAgentStringClass {
 			$this->css1 = true;
 			$this->chrome = true;
 		}
+		# For detecting Microsoft (Chrome) Edge.
+		elseif ($this->mypreg_match('%Mozilla/.* \(.*\) (?:AppleWebKit/.*){0,1}Chrome/[0-9.]*.*(?:Safari/.*){0,1} Edg/([0-9.]*)%i', $userAgent, $matches)) {
+			$browserName = "Microsoft (Chrome) Edge";
+
+			if ($this->StringContains($matches[1], ".")) {
+				$t = explode(".", trim($matches[1]));
+
+				$this->rawVersion['major'] = $t[0];
+				$this->rawVersion['minor'] = $t[1];
+				$this->rawVersion['build'] = (isset($t[2]))? $t[2] : "";
+				$this->rawVersion['rev'] = (isset($t[3]))? $t[3] : "";
+
+				if ($t[1] == 0) $browserVersion = trim($t[0]);
+				else $browserVersion = trim($t[0]) . "." . trim($t[1]);
+			}
+			else $browserVersion = trim($matches[1]);
+
+			$this->type = $this->deviceTypePC;
+			$this->javascript = true;
+			$this->iframe = true;
+			$this->css = true;
+			$this->frames = true;
+			$this->cookies = true;
+			$this->backgroundsounds = true;
+			$this->java = true;
+			$this->css1 = true;
+			$this->edge = true;
+			$this->chromeEdge = true;
+			$this->chromeClone = true;
+		}
 		# For detecting Google Chrome.
 		elseif ($this->mypreg_match('%Mozilla/.* \(.*\) (?:AppleWebKit/.*){0,1}Chrome/([0-9.]*).*(?:Safari/.*){0,1}%i', $userAgent, $matches)) {
 			$browserName = "Google Chrome";
@@ -1865,64 +1893,6 @@ class parseUserAgentStringClass {
 			$this->firefoxClone = true;
 			if ($this->treatClonesAsTheRealThing) $this->firefox = true;
 		}
-		# For detecting Blackberry devices.
-		elseif ($this->mypreg_match('%BlackBerry.*/.* Profile/MIDP-2\.0 Configuration/CLDC-1\.1 VendorID/102 ips-agent%i', $userAgent)) {
-			$this->fullname = "BlackBerry on RIM OS";
-			$this->type = $this->deviceTypeMobile;
-			$this->javascript = true;
-			$this->iframe = true;
-			$this->css = true;
-			$this->frames = true;
-			$this->cookies = true;
-			$this->backgroundsounds = true;
-			$this->css1 = true;
-			$this->blackberry = true;
-			return;
-		}
-		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \(BB(?<blackBerryOSVersion>[0-9]{1,2}).*\) AppleWebKit/[0-9.]*\+ \(KHTML, like Gecko\) Version/(?<blackBerryBrowserVersion>[0-9.]*) Mobile Safari/[0-9.]*\+%i', $userAgent, $matches)) {
-
-			list($majorVer, $minorVer, $build, $rev) = explode(".", trim($matches['blackBerryBrowserVersion']));
-			$this->rawVersion['major'] = $majorVer;
-			$this->rawVersion['minor'] = $minorVer;
-			$this->rawVersion['build'] = $build;
-			$this->rawVersion['rev'] = $rev;
-
-			$this->fullname = "BlackBerry mobile browser version $majorVer.$minorVer on Blackberry OS version " . $matches['blackBerryOSVersion'];
-			$this->type = $this->deviceTypeMobile;
-			$this->javascript = true;
-			$this->iframe = true;
-			$this->css = true;
-			$this->frames = true;
-			$this->cookies = true;
-			$this->backgroundsounds = true;
-			$this->css1 = true;
-			$this->blackberry = true;
-			return;
-		}
-		elseif ($this->mypreg_match('%NetFront/([0-9.]*).*Windows NT 5.1%i', $userAgent, $matches)) {
-			$this->fullname = "NetFront version " . trim($matches[1]) . " on Windows XP";
-			$this->type = $this->deviceTypeMobile;
-			return;
-		}
-		elseif ($this->mypreg_match('%.*HTTrack ([0-9.]*)x.*%i', $userAgent, $matches)) {
-			$browserName = "HTTrack";
-
-			list($majorVer, $minorVer, $build, $rev) = explode(".", trim($matches[1]));
-			$this->rawVersion['major'] = $majorVer;
-			$this->rawVersion['minor'] = $minorVer;
-
-			$browserVersion = "$majorVer.$minorVer";
-
-			$this->type = $this->deviceTypeMobile;
-			$this->javascript = true;
-			$this->iframe = true;
-			$this->css = true;
-			$this->frames = true;
-			$this->cookies = true;
-			$this->backgroundsounds = true;
-			$this->css1 = true;
-			$this->blackberry = true;
-		}
 		// For detecting OSSProxy.
 		elseif ($this->mypreg_match('%.*OSSProxy ([0-9.]*).*%i', $userAgent, $matches)) {
 
@@ -2071,7 +2041,9 @@ class parseUserAgentStringClass {
 
 			$this->type = $this->deviceTypePC;
 		}
-		# Begin bot detection code.
+		# ##############################
+		# ## Begin bot detection code ##
+		# ##############################
 		elseif ($this->mypreg_match('%SeznamBot%i', $userAgent, $matches)) {
 			$this->fullname = "SeznamBot";
 			$this->type = $this->deviceTypeBot;
@@ -3088,10 +3060,12 @@ class parseUserAgentStringClass {
 			$this->type = $this->deviceTypeBot;
 			return;
 		}
-		# End bot detection code.
+		# ############################
+		# ## End bot detection code ##
+		# ############################
 		else {
-			$this->type = "Unknown";
-			$this->fullname = "Unknown";
+			$this->type = "unknown";
+			$this->fullname = "unknown";
 			$checkForOS = false;
 			return;
 		}
@@ -3099,15 +3073,23 @@ class parseUserAgentStringClass {
 		if ($checkForOS) $operatingSystem = $this->processOperatingSystemString($userAgent);
 
 		if (!empty($browserVersion)) {
-			$this->fullname = "$browserName version $browserVersion on $operatingSystem";
+			if (isset($operatingSystem)) {
+				$this->fullname = "$browserName version $browserVersion on $operatingSystem";
+				$this->osname = $operatingSystem;
+			}
+			else $this->fullname = "$browserName version $browserVersion";
+
 			$this->browsername = $browserName;
-			$this->osname = $operatingSystem;
 			$this->browserversion = $browserVersion;
 		}
 		else {
-			$this->fullname = "$browserName (unknown version) on $operatingSystem";
+			if (isset($operatingSystem)) {
+				$this->fullname = "$browserName (unknown version) on $operatingSystem";
+				$this->osname = $operatingSystem;
+			}
+			else $this->fullname = "$browserName (unknown version)";
+			
 			$this->browsername = $browserName;
-			$this->osname = $operatingSystem;
 			$this->browserversion = 0;
 		}
 		return;
@@ -3183,7 +3165,11 @@ class parseUserAgentStringClass {
       			$macOSXVersion = intval(trim($matches['macOSXVersion']), 10);
 
       			if ($this->includeMacOSName) {
-      				if ($macOSXVersion == 4) $operatingSystem = "Mac OSX 10.4 Tiger";
+      				if ($macOSXVersion == 0) $operatingSystem = "Mac OSX 10.0 Cheetah";
+      				elseif ($macOSXVersion == 1) $operatingSystem = "Mac OSX 10.1 Puma";
+      				elseif ($macOSXVersion == 2) $operatingSystem = "Mac OSX 10.2 Jaguar";
+      				elseif ($macOSXVersion == 3) $operatingSystem = "Mac OSX 10.3 Panther";
+      				elseif ($macOSXVersion == 4) $operatingSystem = "Mac OSX 10.4 Tiger";
       				elseif ($macOSXVersion == 5) $operatingSystem = "Mac OSX 10.5 Leopard";
       				elseif ($macOSXVersion == 6) $operatingSystem = "Mac OSX 10.6 Snow Leopard";
       				elseif ($macOSXVersion == 7) $operatingSystem = "Mac OSX 10.7 Lion";
@@ -3191,6 +3177,10 @@ class parseUserAgentStringClass {
       				elseif ($macOSXVersion == 9) $operatingSystem = "Mac OSX 10.9 Mavericks";
       				elseif ($macOSXVersion == 10) $operatingSystem = "Mac OSX 10.10 Yosemite";
       				elseif ($macOSXVersion == 11) $operatingSystem = "Mac OSX 10.11 El Capitan";
+      				elseif ($macOSXVersion == 12) $operatingSystem = "Mac OSX 10.12 Sierra";
+      				elseif ($macOSXVersion == 13) $operatingSystem = "Mac OSX 10.13 High Sierra";
+      				elseif ($macOSXVersion == 14) $operatingSystem = "Mac OSX 10.14 Mojave";
+      				elseif ($macOSXVersion == 15) $operatingSystem = "Mac OSX 10.15 Catalina";
       				else $operatingSystem = "Mac OSX 10 (Unknown Version)";
       			}
       			else $operatingSystem = "Mac OSX 10.$macOSXVersion";
@@ -3307,7 +3297,15 @@ class parseUserAgentStringClass {
 		if (preg_match('/\A[0-9.]*\Z/i', $version)) {
 			$operatingSystem = "Android " . trim($version);
 			$androidVersionPieces = explode(".", trim($version));
-			$androidVersion = floatval($androidVersionPieces[0] . "." . $androidVersionPieces[1]);
+      if (count($androidVersionPieces) > 0) {
+        $androidVersion = $androidVersionPieces[0];
+      } else {
+        $androidVersion = '';
+      }
+      if (count($androidVersionPieces) > 1) {
+        $androidVersion = $androidVersion.".".$androidVersionPieces[1];
+      }
+			//$androidVersion = floatval($androidVersionPieces[0] . "." . $androidVersionPieces[1]);
 			$this->androidVersion = $androidVersion;
 
       			if ($this->includeAndroidName) {
@@ -3321,18 +3319,17 @@ class parseUserAgentStringClass {
       				elseif (($androidVersion == 5) or ($androidVersion == 5.1)) $operatingSystem .= " Lollipop";
       				elseif ($androidVersion == 6) $operatingSystem .= " Marshmallow";
       				elseif ($androidVersion == 7) $operatingSystem .= " Nougat";
+      				elseif ($androidVersion == 8) $operatingSystem .= " Oreo";
+      				elseif ($androidVersion == 9) $operatingSystem .= " Pie";
       			}
 		}
 		else {
-			if ($this->includeAndroidName) {
-				if ($version == "GBE") $operatingSystem = "Android version 2.3 Gingerbread";
-			}
-			else {
-				if ($version == "GBE") $operatingSystem = "Android version 2.3";
+			if ($version == "GBE") {
+				$operatingSystem = "Android version 2.3";
+				if ($this->includeAndroidName) $operatingSystem .= " Gingerbread";
 			}
 		}
 
 		return $operatingSystem;
 	}
 }
-?>
