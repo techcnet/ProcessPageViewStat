@@ -1,5 +1,5 @@
 
-.dragscroll a, .dragscroll a:link, .dragscroll a:active {
+.dragscroll a,.dragscroll a:link,.dragscroll a:active {
 text-decoration:none;
 background-color:inherit;
 color:#18507C;
@@ -17,21 +17,21 @@ background-color:inherit;
 color:#385C72;
 }
 
-#id_filter, #id_pagination{
+#pvs_filter,.pvs_pagination{
 display:inline-block;
 margin-top:10px;
 }
 
-#id_pagination{
+.pvs_pagination{
 float:right;
 }
 
-#id_filter select{
+#pvs_filter select{
 margin-right:3px;
 font-size:medium;
 }
 
-#id_pagination select{
+.pvs_pagination select{
 font-size:medium;
 }
 
@@ -103,20 +103,24 @@ vertical-align:middle;
 border:0px;
 }
 
-#id_update{
+#pvs_update{
 font-size:medium;
 background-repeat:no-repeat;
 background-position:center center;
-width:32px;
 border:1px solid #cccccc;
 background-color:#dddddd;
 border-style:solid;
 cursor:pointer;
 }
 
-#id_update:hover{
+#pvs_update:hover{
 border-color:#2d6987;
 background-color:#eeeeee;
+}
+
+#pvs_update img{
+display:inline-block;
+vertical-align:middle;
 }
 
 .dragscroll{
@@ -127,12 +131,34 @@ background-color:#ffffff;
 white-space:nowrap;
 }
 
+.pvs_config{
+margin-top:10px;
+text-align:center;
+}
+
+.pvs_links{
+margin-top:10px;
+text-align:center;
+font-size:small;
+}
+
+.pvs_donate{
+margin-top:10px;
+}
+
+.pvs_donate img{
+margin:auto;
+}
+
 @media screen and (max-width:500px){
-#id_pagination{
+.pvs_pagination{
 margin-top:5px;
 float:none;
 }
-#id_filter, #id_pagination{
+.dragscroll{
+margin-bottom:10px;
+}
+#pvs_filter,.pvs_pagination{
 display:block;
 text-align:center;
 }

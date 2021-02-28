@@ -7,7 +7,7 @@
  * @author tech-c.net
  * @license Licensed under GNU/GPL v2
  * @link https://tech-c.net/posts/page-view-statistic-for-processwire/
- * @version 1.0.6
+ * @version 1.0.7
  * 
  * @see Forum Thread: https://processwire.com/talk/topic/24189-pageviewstatistic-for-processwire/
  * @see Donate: https://www.paypal.me/techcnet/0usd
@@ -30,7 +30,7 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
       'summary' => 'Logs page views of the CMS.',
       'href' => 'https://tech-c.net/posts/page-view-statistic-for-processwire/',
       'author' => 'tech-c.net',
-      'version' => 106,
+      'version' => 107,
       'icon' => 'signal',
       'autoload' => true,
       'singular' => true);
@@ -650,7 +650,7 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
 
     $module_url = $this->config()->urls->siteModules.$this->className;
     $this->config()->scripts->add($module_url.'/dragscroll.js');
-    $this->config()->styles->add($module_url.'/pvs.css');
+    $this->config()->styles->add($module_url.'/pvs.css?v=1.0.7');
 
     $view = $this->input->post('view', 'int', 0);
     if (!isset($view)) $view = 0;
@@ -711,9 +711,9 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
       }
     }
 
-    $result = '<form method="POST" id="id_filter">';
+    $result = '<form method="POST" id="pvs_filter">';
       $view_text = array($this->_('Day'), $this->_('Month'), $this->_('Year'), $this->_('Total'));
-      $result .= '<select name="view" onchange="document.getElementById(\'id_filter\').submit();">';
+      $result .= '<select name="view" onchange="this.form.submit();">';
       for ($i = 0; $i <= 3; $i++) {
         $result .= '<option value="'.$i.'"';
           if ($i == $view) $result .= ' selected="selected"';
@@ -722,7 +722,7 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
       $result .= '</select>';
       $result .= '<select name="day"';
       if ($view > 0) $result .= ' style="display:none"';
-      $result .= ' onchange="document.getElementById(\'id_filter\').submit();">';
+      $result .= ' onchange="this.form.submit();">';
       $daysofmonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
       for ($i = 1; $i <= $daysofmonth; $i++) {
         $result .= '<option value="'.$i.'"';
@@ -732,7 +732,7 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
       $result .= '</select>';
       $result .= '<select name="month"';
       if ($view > 1) $result .= ' style="display:none"';
-      $result .= ' onchange="document.getElementById(\'id_filter\').submit();">';
+      $result .= ' onchange="this.form.submit();">';
       for ($i = 1; $i <= 12; $i++) {
         $result .= '<option value="'.$i.'"';
           if ($i == $month) $result .= ' selected="selected"';
@@ -742,14 +742,14 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
       $result .= '</select>';
       $result .= '<select name="year"';
       if ($view > 2) $result .= ' style="display:none"';
-      $result .= ' onchange="document.getElementById(\'id_filter\').submit();">';
+      $result .= ' onchange="this.form.submit();">';
       for ($i = 2000; $i <= 2040; $i++) {
         $result .= '<option value="'.$i.'"';
           if ($i == $year) $result .= ' selected="selected"';
         $result .= '>'.$i.'</option>';
       }
       $result .= '</select>';
-      $result .= '<button title="'.$this->_('Update').'" id="id_update" style="background-image:url(\''.$module_url.'/images/update.png\')" onclick="document.getElementById(\'id_filter\').submit();">&nbsp;</button>';
+      $result .= '<button title="'.$this->_('Update').'" id="pvs_update" onclick="this.form.submit();"><img src="'.$module_url.'/images/update.png" /></button>';
     $result .= '</form>';
 
     if ($view == 0) {
@@ -786,30 +786,12 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
       $data = array_merge($defaults, $data);
 
       if ($rowlimit < $rows) {
-        $result .= '<form method="POST" id="id_pagination">';
+        $result .= '<form method="POST" class="pvs_pagination">';
           $result .= '<input type="hidden" name="day" value="'.$day.'">';
           $result .= '<input type="hidden" name="month" value="'.$month.'">';
           $result .= '<input type="hidden" name="year" value="'.$year.'">';
           $result .= '<input type="hidden" name="view" value="'.$view.'">';
-          $result .= '<select name="start" id="id_pageselect" onchange="document.getElementById(\'id_pagination\').submit();"></select>';
-          $result .= '<script>';
-            $result .= 'var sel2 = document.getElementById("id_pageselect");';
-            $result .= 'for (var i = 0; i < '.$rows.'; i+='.$rowlimit.') {';
-              $result .= 'var opt = document.createElement("option");';
-              $result .= 'if (('.$start.' >= i) && ('.$start.' < (i+'.$rowlimit.'))) {';
-                $result .= 'opt.value = i;';
-                $result .= 'opt.selected = "selected"';
-              $result .= '} else {';
-                $result .= 'opt.value = i;';
-              $result .= '}';
-              $result .= 'if ((i+'.$rowlimit.') > '.$rows.') {';
-                $result .= 'opt.text = (i+1) + " - " + '.$rows.' + " ";';
-              $result .= '} else {';
-                $result .= 'opt.text = (i+1) + " - " + (i+'.$rowlimit.') + " ";';
-              $result .= '}';
-              $result .= 'sel2.appendChild(opt);';
-            $result .= '}';
-          $result .= '</script>';
+          $result .= '<select name="start" id="id_pageselect1" onchange="this.form.submit();"></select>';
         $result .= '</form>';
         $result .= '<div class="pvs_clear"></div>';
       }
@@ -873,6 +855,41 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
         }
         $result .= '</div>';
       $result .= '</div>';
+
+      if ($rowlimit < $rows) {
+        $result .= '<form method="POST" class="pvs_pagination">';
+          $result .= '<input type="hidden" name="day" value="'.$day.'">';
+          $result .= '<input type="hidden" name="month" value="'.$month.'">';
+          $result .= '<input type="hidden" name="year" value="'.$year.'">';
+          $result .= '<input type="hidden" name="view" value="'.$view.'">';
+          $result .= '<select name="start" id="id_pageselect2" onchange="this.form.submit();"></select>';
+          $result .= '<script>';
+            $result .= 'var sel1 = document.getElementById("id_pageselect1");';
+            $result .= 'var sel2 = document.getElementById("id_pageselect2");';
+            $result .= 'for (var i = 0; i < '.$rows.'; i+='.$rowlimit.') {';
+              $result .= 'var opt = document.createElement("option");';
+              $result .= 'if (('.$start.' >= i) && ('.$start.' < (i+'.$rowlimit.'))) {';
+                $result .= 'opt.value = i;';
+                $result .= 'opt.selected = "selected"';
+              $result .= '} else {';
+                $result .= 'opt.value = i;';
+              $result .= '}';
+              $result .= 'if ((i+'.$rowlimit.') > '.$rows.') {';
+                $result .= 'opt.text = (i+1) + " - " + '.$rows.' + " ";';
+              $result .= '} else {';
+                $result .= 'opt.text = (i+1) + " - " + (i+'.$rowlimit.') + " ";';
+              $result .= '}';
+              $result .= 'var opt2 = opt.cloneNode(true);';
+              $result .= 'if (opt.selected != ""){';
+                $result .= 'opt2.selected = "selected";';
+              $result .= '}';
+              $result .= 'sel1.appendChild(opt);';
+              $result .= 'sel2.appendChild(opt2);';
+            $result .= '}';
+          $result .= '</script>';
+        $result .= '</form>';
+        $result .= '<div class="pvs_clear"></div>';
+      }
     }
 
     if ($view == 1) {
@@ -1036,18 +1053,24 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
       $result .= '</div>';
     }
 
-    $meta = array(
-      'id' => 'moduleConfigLink',
-      'href' => "{$this->config->urls->admin}module/edit?name={$this->className}",
-      'value' => $this->_('Configuration'),
-      'icon' => 'cog'
-    );
-    $moduleConfigLinkButton = $this->populateInputField($this->modules->get('InputfieldButton'), $meta)->addClass('ui-priority-secondary ui-button-float-right');
-    $result .= $moduleConfigLinkButton->render();
+    $result .= '<div class="pvs_config">';
+      $meta = array(
+        'id' => 'moduleConfigLink',
+        'href' => "{$this->config->urls->admin}module/edit?name={$this->className}",
+        'value' => $this->_('Configuration'),
+        'icon' => 'cog'
+      );
+      $moduleConfigLinkButton = $this->populateInputField($this->modules->get('InputfieldButton'), $meta)->addClass('ui-priority-secondary ui-button-float-right');
+      $result .= $moduleConfigLinkButton->render();
+    $result .= '</div>';
 
-    $result .= '<p style="font-size:small;text-align:center">This module uses <a target="_blank" href="https://www.ip2location.com/">IP2Location</a>, <a target="_blank" href="http://github.com/asvd/dragscroll">dragscroll</a> and <a target="_blank" href="https://www.toms-world.org/blog/parseuseragentstring/">parseUserAgentStringClass</a>.</p>';
-    
-    $result .= '<p><a target="_blank" href="https://www.paypal.me/techcnet/0usd"><img style="margin:auto;" src="'.$module_url.'/images/donate.png" /></a></p>';
+    $result .= '<div class="pvs_links">';
+      $result .= 'This module uses <a target="_blank" href="https://www.ip2location.com/">IP2Location</a>, <a target="_blank" href="http://github.com/asvd/dragscroll">dragscroll</a> and <a target="_blank" href="https://www.toms-world.org/blog/parseuseragentstring/">parseUserAgentStringClass</a>.';
+    $result .= '</div>';
+
+    $result .= '<div class="pvs_donate">';
+      $result .= '<a target="_blank" href="https://www.paypal.me/techcnet/0usd"><img src="'.$module_url.'/images/donate.png" /></a>';
+    $result .= '</div>';
 
     return $result;
   }
