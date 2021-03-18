@@ -10,7 +10,7 @@
  * @version 1.0.7
  * 
  * @see Forum Thread: https://processwire.com/talk/topic/24189-pageviewstatistic-for-processwire/
- * @see Donate: https://www.paypal.me/techcnet/0usd
+ * @see Donate: https://www.paypal.me/techcnet/
  */
 
 class ProcessPageViewStat extends Process implements ConfigurableModule {
@@ -1069,7 +1069,7 @@ class ProcessPageViewStat extends Process implements ConfigurableModule {
     $result .= '</div>';
 
     $result .= '<div class="pvs_donate">';
-      $result .= '<a target="_blank" href="https://www.paypal.me/techcnet/0usd"><img src="'.$module_url.'/images/donate.png" /></a>';
+      $result .= '<a target="_blank" href="https://www.paypal.me/techcnet/"><img src="'.$module_url.'/images/donate.png" /></a>';
     $result .= '</div>';
 
     return $result;
