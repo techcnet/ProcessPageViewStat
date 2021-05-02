@@ -1,0 +1,1637 @@
+<?php namespace ProcessWire;
+
+/**
+ * Page View Statistic for ProcessWire
+ * Logs page views of the CMS.
+ *
+ * @author tech-c.net
+ * @license Licensed under GNU/GPL v2
+ * @link https://tech-c.net/posts/page-view-statistic-for-processwire/
+ * @version 1.0.8
+ * 
+ * @see Forum Thread: https://processwire.com/talk/topic/24189-pageviewstatistic-for-processwire/
+ * @see Donate: https://www.paypal.me/techcnet/
+ */
+
+class ProcessPageViewStat extends Process {
+  const dbTableMain = 'process_pageviewstat_main';
+  const dbTableIp = 'process_pageviewstat_ip';
+  const dbTableCountry = 'process_pageviewstat_country';
+  const dbTableBrowser = 'process_pageviewstat_browser';
+  const dbTableOs = 'process_pageviewstat_os';
+  const dbTablePage = 'process_pageviewstat_page';
+  const dbTableOrigin = 'process_pageviewstat_origin';
+  const dbTableCache = 'process_pageviewstat_cache';
+
+  const PageName = 'processpageviews';
+  const PagePermission = 'processpageviews';
+  
+  const ChartMaxSize = 150;
+
+  const ViewDetailedRecords = 0;
+  const ViewDaysOfMonth = 1;
+  const ViewLast30Days = 2;
+  const ViewLast60Days = 3;
+  const ViewLast90Days = 4;
+  const ViewLast180Days = 5;
+  const ViewLast365Days = 6;
+  const ViewAllDays = 7;
+  const ViewMonthsOfYear = 8;
+  const ViewLast12Months = 9;
+  const ViewAllMonths = 10;
+  const ViewAllYears = 11;
+  const ViewRecordsDays = 12;
+  const ViewRecordsMonths = 13;
+  const ViewRecordsYears = 14;
+  /**
+   * Return information about this module
+   */
+  public static function getModuleInfo() {
+    return array(
+      'title' => 'Page View Statistic',
+      'summary' => 'Logs page views of the CMS.',
+      'href' => 'https://tech-c.net/posts/page-view-statistic-for-processwire/',
+      'author' => 'tech-c.net',
+      'version' => 108,
+      'icon' => 'signal',
+      'autoload' => true,
+      'singular' => true);
+  }
+  /**
+   * Instance of ProcessPageViewStat
+   */
+  public function __construct() {
+     $data = $this->modules->getModuleConfigData('ProcessPageViewStat');
+     if (((isset($data['delete_all_records'])) && ($data['delete_all_records'] != '')) ||
+         ((isset($data['rebuild_cache'])) && ($data['rebuild_cache'] != ''))) {
+       $data['delete_all_records'] = '';
+       $data['rebuild_cache'] = '';
+       $this->modules->saveModuleConfigData('ProcessPageViewStat', $data);
+     }
+  }
+  /**
+   * Called only when the module is installed
+   */
+  public function ___install () {
+    $sql = 'CREATE TABLE IF NOT EXISTS '.self::dbTableMain.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'tm timestamp NOT NULL,'.
+           'vt int(10) unsigned,'.
+           'ip_id int(10) unsigned,'.
+           'country_id int(10) unsigned,'.
+           'browser_id int(10) unsigned,'.
+           'os_id int(10) unsigned,'.
+           'page_id int(10) unsigned,'.
+           'origin_id int(10) unsigned,'.
+           'PRIMARY KEY(id)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';'.
+
+           'CREATE TABLE IF NOT EXISTS '.self::dbTableIp.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'ip varchar(50),'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(ip)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';'.
+           
+           'CREATE TABLE IF NOT EXISTS '.self::dbTableCountry.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'country varchar(255),'.
+           'countryimg varchar(16),'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(country)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';'.
+
+           'CREATE TABLE IF NOT EXISTS '.self::dbTableBrowser.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'browser varchar(255),'.
+           'browserimg varchar(16),'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(browser)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';'.
+
+           'CREATE TABLE IF NOT EXISTS '.self::dbTableOs.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'os varchar(255),'.
+           'osimg varchar(16),'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(os)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';'.
+
+           'CREATE TABLE IF NOT EXISTS '.self::dbTablePage.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'page varchar(255),'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(page)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';'.
+
+           'CREATE TABLE IF NOT EXISTS '.self::dbTableOrigin.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'origin varchar(255),'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(origin)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';'.
+
+           'CREATE TABLE IF NOT EXISTS '.self::dbTableCache.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'tm timestamp NOT NULL,'.
+           'counts int(10) unsigned,'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(tm)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';';
+    $this->database->query($sql);
+
+    $pages = $this->wire('pages');
+    $info = self::getModuleInfo();
+    $p = $pages->get('template=admin, name='.self::PageName);
+    if ($p->id) {
+      $p->delete();
+      $this->message('Deleted Page: '.$p->path);
+    }
+    $page = new Page();
+    $page->template = 'admin';
+    $page->parent = $pages->get($this->config->adminRootPageID)->child('name=setup');
+    $page->title = $info['title'];
+    $page->name = self::PageName;
+    $page->process = $this;
+    $page->save();
+    $this->message('Created Page: '.$page->path);
+
+    $p = $this->wire('permissions')->get(self::PagePermission);
+    if ($p->id) {
+      $p->delete();
+      $this->message('Deleted Permission: '.self::PagePermission);
+    }
+    $permission = new Permission();
+    $permission->name = self::PagePermission;
+    $permission->title = $info['title'];
+    $permission->save();
+    $this->message('Created Permission: '.self::PagePermission);
+  }
+  /**
+   * Called only when the module is uninstalled
+   */
+  public function ___uninstall () {
+    $sql = 'DROP TABLE IF EXISTS '.self::dbTableMain.';'.
+           'DROP TABLE IF EXISTS '.self::dbTableIp.';'.
+           'DROP TABLE IF EXISTS '.self::dbTableCountry.';'.
+           'DROP TABLE IF EXISTS '.self::dbTableBrowser.';'.
+           'DROP TABLE IF EXISTS '.self::dbTableOs.';'.
+           'DROP TABLE IF EXISTS '.self::dbTablePage.';'.
+           'DROP TABLE IF EXISTS '.self::dbTableOrigin.';'.
+           'DROP TABLE IF EXISTS '.self::dbTableCache.';';
+    $this->database->query($sql);
+
+    $pages = $this->wire('pages');
+    $moduleID = $this->wire('modules')->getModuleID($this);
+    
+    $mbPage = $pages->get('template=admin, process='.$moduleID.', name='.self::PageName);
+    if ($mbPage->id) {
+      $mbPage->delete();
+      $this->message('Deleted Page: '.$mbPage->path);
+    }
+
+    $permission = $this->wire('permissions')->get(self::PagePermission);
+    if ($permission->id){
+      $permission->delete();
+      $this->message('Deleted Permission: '.self::PagePermission);
+    }
+  }
+  /**
+   * Initialization function called before any execute functions
+   */
+  public function init() {
+    $this->addHookAfter('Page::render', $this, 'ProcessPageViewHook');
+
+    $this->addHookAfter('Modules::saveConfig', $this, 'ProcessPageViewSaveConfig');
+
+    if ($this->record_time == 1) {
+      $this->addHookBefore('ProcessPageView::pageNotFound', $this, 'ProcessPageViewReceiver');
+    }
+
+    if ($this->wire('modules')->isInstalled('LazyCron')) {
+      if ($this->auto_delete_older > 1) {
+        $this->addHook('LazyCron::everyDay', $this, 'ProcessPageViewAutoDelete');//everyDay everyMinute
+      }
+      if ($this->auto_update_ip2loc == 1) {
+        $this->addHook('LazyCron::every4Weeks', $this, 'ProcessPageViewIPlocUpdate');
+      }
+      if (in_array($this->cache_update_interval, array('everyMinute', 'every5Minutes', 'every10Minutes', 'every30Minutes', 'everyHour', 'everyDay'))) {
+        $this->addHook('LazyCron::'.$this->cache_update_interval, $this, 'ProcessPageViewCacheUpdate');
+      }
+    }
+  }
+  /**
+   * Truncates records or cache table if requested
+   */
+  public function ProcessPageViewSaveConfig(HookEvent $event) {
+    if ((isset($event->arguments[0])) && ($event->arguments[0] == $this->className)) {
+      if ($this->input->post->rebuild_cache) {
+        $this->database->query('TRUNCATE TABLE '.self::dbTableCache);
+        $this->update_cache();
+        wire('log')->message($this->className.' cache rebuild');
+      }
+      if ($this->input->post->delete_all_records) {
+        $this->database->query('TRUNCATE TABLE '.self::dbTableMain);
+        $this->database->query('TRUNCATE TABLE '.self::dbTableIp);
+        $this->database->query('TRUNCATE TABLE '.self::dbTableCountry);
+        $this->database->query('TRUNCATE TABLE '.self::dbTableBrowser);
+        $this->database->query('TRUNCATE TABLE '.self::dbTableOs);
+        $this->database->query('TRUNCATE TABLE '.self::dbTablePage);
+        $this->database->query('TRUNCATE TABLE '.self::dbTableOrigin);
+        wire('log')->message($this->className.' all records deleted');
+      }
+    }
+  }
+  /**
+   * Automatically deletes older records
+   */
+  public function ProcessPageViewAutoDelete(HookEvent $event) {
+    if ($this->auto_delete_older > 1) {
+      $this->update_cache();
+      $dt = new \DateTime(null, new \DateTimeZone('UTC'));
+      $dt->modify('-'.$this->auto_delete_older.' days');
+      $utcfrom = $dt->format('U');    // EXPLAIN DELETE FROM <- test
+      $query = $this->database->prepare('DELETE FROM '.self::dbTableMain.' WHERE tm < FROM_UNIXTIME(:utcfrom)');
+      $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_STR);
+      if (!$query->execute()) {
+        wire('log')->error($this->className.' Automatically deleted: '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+      } else {
+        $count = $query->rowCount();
+        wire('log')->message($this->className.' Automatically deleted '.$count.' records older than '.$this->auto_delete_older.' days ('.$utcfrom.')');
+      }
+    }
+  }
+  /**
+   * Automatically download IP2Location database
+   */
+  public function ProcessPageViewIPlocUpdate(HookEvent $event) {
+    require_once(__DIR__.'/func/IPlocUpdate.php');
+    wire('log')->message(auto_download('https://download.ip2location.com/lite/IP2LOCATION-LITE-DB1.BIN.ZIP', __DIR__.'/iploc/', 'IP2LOCATION-LITE-DB1.BIN.ZIP'));
+    wire('log')->message(auto_download('https://download.ip2location.com/lite/IP2LOCATION-LITE-DB1.IPV6.BIN.ZIP', __DIR__.'/iploc/', 'IP2LOCATION-LITE-DB1.IPV6.BIN.ZIP'));
+  }
+  /**
+   * Automatically updates the cache
+   */
+  public function ProcessPageViewCacheUpdate(HookEvent $event) {
+    $this->update_cache();
+  }
+  /**
+   * Stores the record in the database
+   */
+  private function add_record($vt, $ip_addr, $country_name, $country_image, $browser_name, $browser_image, $os_name, $os_image, $request, $origin) {
+    $query = $this->database->prepare("INSERT INTO ".self::dbTableIp." (ip) VALUES (:ip) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)");
+    $query->bindValue(':ip', $ip_addr, \PDO::PARAM_STR);
+    if (!$query->execute()) {
+      wire('log')->error($this->className.' INSERT '.self::dbTableIp.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+      return;
+    }
+    $id_ip = $this->database->lastInsertId();
+    if ($id_ip == 0) {
+      wire('log')->message($this->className.' id_ip 0');
+      return;
+    }
+
+    $query = $this->database->prepare("INSERT INTO ".self::dbTableCountry." (country,countryimg) VALUES (:country_name,:country_image) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)");
+    $query->bindValue(':country_name', $country_name, \PDO::PARAM_STR);
+    $query->bindValue(':country_image', $country_image, \PDO::PARAM_STR);
+    if (!$query->execute()) {
+      wire('log')->error($this->className.' INSERT '.self::dbTableCountry.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+      return;
+    }
+    $id_country = $this->database->lastInsertId();
+    if ($id_country == 0) {
+      wire('log')->message($this->className.' id_country 0');
+      return;
+    }
+
+    $query = $this->database->prepare("INSERT INTO ".self::dbTableBrowser." (browser,browserimg) VALUES (:browser_name,:browser_image) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)");
+    $query->bindValue(':browser_name', $browser_name, \PDO::PARAM_STR);
+    $query->bindValue(':browser_image', $browser_image, \PDO::PARAM_STR);
+    if (!$query->execute()) {
+      wire('log')->error($this->className.' INSERT '.self::dbTableBrowser.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+      return;
+    }
+    $id_browser = $this->database->lastInsertId();
+    if ($id_browser == 0) {
+      wire('log')->message($this->className.' id_browser 0');
+      return;
+    }
+
+    $query = $this->database->prepare("INSERT INTO ".self::dbTableOs." (os,osimg) VALUES (:os_name,:os_image) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)");
+    $query->bindValue(':os_name', $os_name, \PDO::PARAM_STR);
+    $query->bindValue(':os_image', $os_image, \PDO::PARAM_STR);
+    if (!$query->execute()) {
+      wire('log')->error($this->className.' INSERT '.self::dbTableOs.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+      return;
+    }
+    $id_os = $this->database->lastInsertId();
+    if ($id_os == 0) {
+      wire('log')->message($this->className.' id_os 0');
+      return;
+    }
+
+    $query = $this->database->prepare("INSERT INTO ".self::dbTablePage." (page) VALUES (:request) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)");
+    $query->bindValue(':request', $request, \PDO::PARAM_STR);
+    if (!$query->execute()) {
+      wire('log')->error($this->className.' INSERT '.self::dbTablePage.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+      return;
+    }
+    $id_request = $this->database->lastInsertId();
+    if ($id_request == 0) {
+        wire('log')->message($this->className.' id_request 0');
+        return;
+    }
+
+    $query = $this->database->prepare("INSERT INTO ".self::dbTableOrigin." (origin) VALUES (:origin) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)");
+    $query->bindValue(':origin', $origin, \PDO::PARAM_STR);
+    if (!$query->execute()) {
+      wire('log')->error($this->className.' INSERT '.self::dbTableOrigin.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+      return;
+    }
+    $id_origin = $this->database->lastInsertId();
+    if ($id_origin == 0) {
+        wire('log')->message($this->className.' id_origin 0');
+        return;
+    }
+
+    if ($vt != '') {
+      $query = $this->database->prepare("INSERT INTO ".self::dbTableMain." (tm,vt,ip_id,country_id,browser_id,os_id,page_id,origin_id) VALUES (NOW(),:vt,:id_ip,:id_country,:id_browser,:id_os,:id_request,:id_origin)");
+      $query->bindValue(':vt', (int) $vt, \PDO::PARAM_INT);
+    } else {
+      $query = $this->database->prepare("INSERT INTO ".self::dbTableMain." (tm,ip_id,country_id,browser_id,os_id,page_id,origin_id) VALUES (NOW(),:id_ip,:id_country,:id_browser,:id_os,:id_request,:id_origin)");
+    }
+    $query->bindValue(':id_ip', (int) $id_ip, \PDO::PARAM_INT);
+    $query->bindValue(':id_country', (int) $id_country, \PDO::PARAM_INT);
+    $query->bindValue(':id_browser', (int) $id_browser, \PDO::PARAM_INT);
+    $query->bindValue(':id_os', (int) $id_os, \PDO::PARAM_INT);
+    $query->bindValue(':id_request', (int) $id_request, \PDO::PARAM_INT);
+    $query->bindValue(':id_origin', (int) $id_origin, \PDO::PARAM_INT);
+    if (!$query->execute()) {
+      wire('log')->error($this->className.' INSERT '.self::dbTableMain.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+    }
+  }
+  /**
+   * Prepares the data before being stored in the database
+   */
+  private function prepare_record($vt, $request, $origin) {
+    $ip_addr = getenv('REMOTE_ADDR');
+    if ($ip_addr == '') return;
+
+    require_once(__DIR__.'/func/IP2Location.php');
+    if (strpos($ip_addr, ':') > 0) {
+      if (file_exists(__DIR__.'/iploc/IP2LOCATION-LITE-DB1.IPV6.BIN')) {
+        $db = new \Database(__DIR__.'/iploc/IP2LOCATION-LITE-DB1.IPV6.BIN', \Database::FILE_IO);
+        $temp_records = $db->lookup($ip_addr, \Database::ALL);
+        $country_name = $temp_records['countryName'];
+        $country_image = strtolower($temp_records['countryCode']);
+      } else {
+        $country_name = '';
+        $country_image = '';
+      }
+    } else {
+      if (file_exists(__DIR__.'/iploc/IP2LOCATION-LITE-DB1.BIN')) {
+        $db = new \Database(__DIR__.'/iploc/IP2LOCATION-LITE-DB1.BIN', \Database::FILE_IO);
+        $temp_records = $db->lookup($ip_addr, \Database::ALL);
+        $country_name = $temp_records['countryName'];
+        $country_image = strtolower($temp_records['countryCode']);
+      } else {
+        $country_name = '';
+        $country_image = '';
+      }
+    }
+    if (($country_name == '') || ($country_name == '-')) $country_name = 'Unknown';
+    if (($country_image == '') || ($country_image == '-')) $country_image = 'unknown';
+
+    require_once(__DIR__.'/func/images.php');
+    $browser_name = '';
+    $browser_image = 'unknown';
+    $os_name = '';
+    $os_image = 'unknown';
+    if (isset($_SERVER['HTTP_USER_AGENT'])) {
+      require_once(__DIR__.'/func/useragent.php');
+      $browser = new \parseUserAgentStringClass();
+      $browser->includeAndroidName = true;
+      $browser->includeWindowsName = true;
+      $browser->includeMacOSName = true;
+      $browser->parseUserAgentString($_SERVER['HTTP_USER_AGENT']);
+      $browser_name = $browser->browsername;
+      $browser_image = get_browser_img(strtolower($browser_name));
+      if ($browser->browserversion != '') {
+        $browser_name = $browser_name.' '.$browser->browserversion;
+      }
+      $os_name = $browser->osname;
+      $os_image = get_os_img(strtolower($os_name));
+    }
+    if ($browser_name == '') {
+      if (isset($browser)) {
+        if ($browser->type != '') {
+          if ($browser->type == 'Unknown') {
+            $browser_name .= $browser->fullname;
+          } else {
+            $browser_name .= $browser->fullname.' ('.$browser->type.')';
+          }
+        } else {
+          if (($browser->userAgentString == '') || ($browser->fullname != '')) {
+            if ($browser->fullname != '') {
+              $browser_name = $browser->fullname.' (Unknown)';
+            } else {
+              $browser_name = 'Unknown';
+            }
+          } else {
+            $browser_name = '';
+          }
+        }
+        $browser_image = get_browser_img(strtolower($browser_name));
+      }
+    }
+
+    $this->add_record($vt, $ip_addr, $country_name, $country_image, $browser_name, $browser_image, $os_name, $os_image, $request, $origin);
+  }
+  /**
+   * Receives the time of view
+   */
+  public function ProcessPageViewReceiver(HookEvent $event) {
+    $page = $event->object;
+    if ($event->arguments[1] == '/vts/') {
+      $vt = $this->input->get('t', 'int', 0);
+      if ($vt == 0) exit(0);
+
+      $request = $this->input->get('u', 'text');
+      if (stripos(' '.$request, 'https://'.$_SERVER['SERVER_NAME']) == 1) {
+        $request = substr($request, strlen('https://'.$_SERVER['SERVER_NAME']));
+      }
+      if (stripos(' '.$request, 'http://'.$_SERVER['SERVER_NAME']) == 1) {
+        $request = substr($request, strlen('http://'.$_SERVER['SERVER_NAME']));
+      }
+      $request = substr($request, 0, 255);
+
+      $origin = $this->input->get('r', 'text');
+      if (stripos(' '.$origin, 'https://'.$_SERVER['SERVER_NAME']) == 1) {
+        $origin = substr($origin, strlen('https://'.$_SERVER['SERVER_NAME']));
+      }
+      if (stripos(' '.$origin, 'http://'.$_SERVER['SERVER_NAME']) == 1) {
+        $origin = substr($origin, strlen('http://'.$_SERVER['SERVER_NAME']));
+      }
+      $origin = substr($origin, 0, 255);
+      
+      $this->prepare_record($vt, $request, $origin);
+      
+      exit(0);
+    }
+  }
+  /**
+   * Records the page view
+   */
+  public function ProcessPageViewHook(HookEvent $event) {
+    $page = $event->object;
+
+    if ($this->record_hidden != '1') {
+      if ($page->isHidden()) return;
+    }
+
+    if ($this->record_admin != '1') {
+      if ($page->template == 'admin') return;
+    }
+
+    if ($this->record_loggedin != '1') {
+      if (wire('user')->isLoggedin()) return;
+    }
+
+    if ($this->record_404 != '1') {
+      if (strpos($page->url, '/http404/') !== false) return;
+    }
+    
+    if ($this->record_time == '1') {
+      $buffer = $event->return;
+      require_once(__DIR__.'/func/javascript.php');
+      $buffer = str_replace('<body>', '<body><script>'.$javascript.'</script>', $buffer);
+      $event->return = $buffer;
+    }
+
+    $request = $this->wire('sanitizer')->entities($_SERVER['REQUEST_URI']);
+    $request = substr($request, 0, 255);
+
+    if (isset($_SERVER['HTTP_REFERER'])) {
+      $origin = $this->wire('sanitizer')->entities($_SERVER['HTTP_REFERER']);
+      if (stripos(' '.$origin, 'https://'.$_SERVER['SERVER_NAME']) == 1) {
+        $origin = substr($origin, strlen('https://'.$_SERVER['SERVER_NAME']));
+      }
+      if (stripos(' '.$origin, 'http://'.$_SERVER['SERVER_NAME']) == 1) {
+        $origin = substr($origin, strlen('http://'.$_SERVER['SERVER_NAME']));
+      }
+      $origin = substr($origin, 0, 255);
+    } else {
+      $origin = '';
+    }
+
+    $this->prepare_record('', $request, $origin);
+  }
+  /**
+   * Shows the records
+   */
+  public function ___execute(){
+    $this->config()->scripts->add($this->config()->urls->siteModules.$this->className.'/dragscroll.js');
+    $this->config()->styles->add($this->config()->urls->siteModules.$this->className.'/pvs.css?v=1.0.8');
+
+    $view = $this->input->post('view', 'int', self::ViewDetailedRecords);
+    if (!isset($view)) $view = self::ViewDetailedRecords;
+    if ($view < self::ViewDetailedRecords) $view = self::ViewDetailedRecords;
+    if ($view > self::ViewRecordsYears) $view = self::ViewRecordsYears;
+
+    $start = $this->input->post('start', 'int', 0);
+    if (!isset($start)) $start = 0;
+    if ($start < 0) $start = 0;
+
+    $year = $this->input->post('year', 'int', 0);
+    if (!isset($year)) $year = 0;
+    $month = $this->input->post('month', 'int', 0);
+    if (!isset($month)) $month = 0;
+    $day = $this->input->post('day', 'int', 0);
+    if (!isset($day)) $day = 0;
+
+    if (($view == self::ViewDetailedRecords) || 
+        ($view == self::ViewDaysOfMonth) || 
+        ($view == self::ViewMonthsOfYear) ||
+        ($view == self::ViewRecordsDays) ||
+        ($view == self::ViewRecordsMonths) ||
+        ($view == self::ViewRecordsYears)) {
+      $s = sprintf('%04d-%02d-%02d', $year, $month, $day);
+      $d = \DateTime::createFromFormat('Y-m-d', $s);
+      if ($d && $d->format('Y-m-d') == $s) {
+        $date = new \DateTime($d->format('Y-m-d'), new \DateTimeZone($this->time_zone));
+        $date->setTime(0, 0, 0);
+      } else {
+        $date = new \DateTime(null, new \DateTimeZone($this->time_zone));
+        $date->setTime(0, 0, 0);
+        $s = $date->format('Y-m-d');
+        $month = date('m', strtotime($s));
+        $year = date('Y', strtotime($s));
+        $day = date('d', strtotime($s));
+        $date = new \DateTime($s, new \DateTimeZone($this->time_zone));
+      }
+    } else {
+      $date = new \DateTime(null, new \DateTimeZone($this->time_zone));
+      $date->setTime(0, 0, 0);
+    }
+
+    // begin filter
+    $result = '<form method="POST" id="pvs_filter">';
+      // view mode
+      $view_text = array(__('Detailed records'), __('Days of month'), __('Last 30 days'), __('Last 60 days'),
+      __('Last 90 days'), __('Last 180 days'), __('Last 365 days'), __('All days'), __('Months of year'), __('Last 12 months'), __('All months'), __('All years'), 'Days', 'Months', 'Years');
+      $result .= '<select name="view" onchange="this.form.submit();">';
+      //for ($i = self::ViewDetailedRecords; $i <= self::ViewRecordsYears; $i++) {
+      for ($i = self::ViewDetailedRecords; $i <= self::ViewAllYears; $i++) {
+        $result .= '<option value="'.$i.'"';
+        if ($i == $view) $result .= ' selected="selected"';
+        $result .= '>'.$view_text[$i].'</option>';
+      }
+      $result .= '</select>';
+      // day
+      $result .= '<select name="day" id="day"';
+      if ($view <> self::ViewDetailedRecords) {
+        $result .= ' style="display:none"';
+      }
+      $result .= ' onchange="this.form.submit();">';
+      $daysofmonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+      for ($i = 1; $i <= $daysofmonth; $i++) {
+        $result .= '<option value="'.$i.'"';
+        if ($i == $day) $result .= ' selected="selected"';
+        $result .= '>'.$i.'</option>';
+      }
+      $result .= '</select>';
+      // month
+      $result .= '<select name="month" id="month"';
+      if (($view <> self::ViewDetailedRecords) && ($view <> self::ViewDaysOfMonth) && ($view <> self::ViewRecordsDays)) {
+        $result .= ' style="display:none"';
+      }
+      $result .= ' onchange="this.form.submit();">';
+      for ($i = 1; $i <= 12; $i++) {
+        $result .= '<option value="'.$i.'"';
+        if ($i == $month) $result .= ' selected="selected"';
+        $month_name = \DateTime::createFromFormat('!m', $i);
+        $result .= '>'.$month_name->format('F').'</option>';
+      }
+      $result .= '</select>';
+      // year
+      $result .= '<select name="year" id="year"';
+      if (($view <> self::ViewDetailedRecords) && ($view <> self::ViewDaysOfMonth) && ($view <> self::ViewMonthsOfYear) && ($view <> self::ViewRecordsDays) && ($view <> self::ViewRecordsMonths)) {
+        $result .= ' style="display:none"';
+      }
+      $result .= ' onchange="this.form.submit();">';
+      $years = new \DateTime();
+      $startyear = $years->format('Y') - 20;
+      $endyear = $years->format('Y') + 20;
+      for ($i = $startyear; $i <= $endyear; $i++) {
+        $result .= '<option value="'.$i.'"';
+        if ($i == $year) $result .= ' selected="selected"';
+        $result .= '>'.$i.'</option>';
+      }
+      $result .= '</select>';
+      // update
+      $result .= '<button title="'.__('Update').'" id="pvs_update" onclick="this.form.submit();">&nbsp;</button>';
+    $result .= '</form>';
+    // end filter
+
+    if (($view <> self::ViewDetailedRecords) && 
+        ($view <> self::ViewRecordsDays) && 
+        ($view <> self::ViewRecordsMonths) && 
+        ($view <> self::ViewRecordsYears)) {
+      if ($this->cache_update_interval == '') {
+        $this->update_cache();
+      }
+    }
+
+    switch ($view) {
+      case self::ViewDetailedRecords:
+        $utcfrom = $date->format('U');
+        $date->modify('+1 day');
+        $utcto = $date->format('U');
+        $result .= $this->renderDetailedRecords($utcfrom, $utcto, $start);
+        break;
+      case self::ViewDaysOfMonth:
+        $date->modify('first day of this month 00:00:00');
+        $utcfrom = $date->format('U');
+        $date->modify('+1 month');
+        $utcto = $date->format('U');
+        $result .= $this->renderCachedVisitorCountsDays($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewLast30Days:
+        $datefrom = clone $date;
+        $dateto = clone $date;
+        $datefrom->modify('29 days ago');
+        $utcfrom = $datefrom->format('U');
+        $dateto->modify('+1 day');
+        $utcto = $dateto->format('U');
+        $result .= $this->renderCachedVisitorCountsDays($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewLast60Days:
+        $datefrom = clone $date;
+        $dateto = clone $date;
+        $datefrom->modify('59 days ago');
+        $utcfrom = $datefrom->format('U');
+        $dateto->modify('+1 day');
+        $utcto = $dateto->format('U');
+        $result .= $this->renderCachedVisitorCountsDays($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewLast90Days:
+        $datefrom = clone $date;
+        $dateto = clone $date;
+        $datefrom->modify('89 days ago');
+        $utcfrom = $datefrom->format('U');
+        $dateto->modify('+1 day');
+        $utcto = $dateto->format('U');
+        $result .= $this->renderCachedVisitorCountsDays($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewLast180Days:
+        $datefrom = clone $date;
+        $dateto = clone $date;
+        $datefrom->modify('179 days ago');
+        $utcfrom = $datefrom->format('U');
+        $dateto->modify('+1 day');
+        $utcto = $dateto->format('U');
+        $result .= $this->renderCachedVisitorCountsDays($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewLast365Days:
+        $datefrom = clone $date;
+        $dateto = clone $date;
+        $datefrom->modify('364 days ago');
+        $utcfrom = $datefrom->format('U');
+        $dateto->modify('+1 day');
+        $utcto = $dateto->format('U');
+        $result .= $this->renderCachedVisitorCountsDays($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewAllDays:
+        $utcfrom = 0;
+        $date->modify('+1 day');
+        $utcto = $date->format('U');
+        $result .= $this->renderCachedVisitorCountsDays($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewMonthsOfYear:
+        $date->modify('first day of January this year 00:00:00');
+        $utcfrom = $date->format('U');
+        $date->modify('+1 year');
+        $utcto = $date->format('U');
+        $result .= $this->renderCachedVisitorCountsMonths($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewLast12Months:
+        $datefrom = clone $date;
+        $dateto = clone $date;
+        $datefrom->modify('first day of this month 00:00:00');
+        $datefrom->modify('11 months ago');
+        $utcfrom = $datefrom->format('U');
+        $dateto->modify('+1 day');
+        $utcto = $dateto->format('U');
+        $result .= $this->renderCachedVisitorCountsMonths($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewAllMonths:
+        $utcfrom = 0;
+        $date->modify('+1 day');
+        $utcto = $date->format('U');
+        $result .= $this->renderCachedVisitorCountsMonths($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewAllYears:
+        $utcfrom = 0;
+        $date->modify('+1 day');
+        $utcto = $date->format('U');
+        $result .= $this->renderCachedVisitorCountsYears($utcfrom, $utcto, $view, $start);
+        break;
+      case self::ViewRecordsDays:
+        $date->modify('first day of this month 00:00:00');
+        $utcfrom = $date->format('U');
+        $date->modify('+1 month');
+        $utcto = $date->format('U');
+        $result .= $this->renderRecordsDays($utcfrom, $utcto, $month, $year);
+        break;
+      case self::ViewRecordsMonths:
+        $date->modify('first day of January this year 00:00:00');
+        $utcfrom = $date->format('U');
+        $date->modify('+1 year');
+        $utcto = $date->format('U');
+        $result .= $this->renderRecordsMonths($utcfrom, $utcto);
+        break;
+      case self::ViewRecordsYears:
+        $result .= $this->renderRecordsYears();
+        break;
+    }
+
+    $result .= '<div class="pvs_config">';
+      $meta = array(
+        'id' => 'moduleConfigLink',
+        'href' => "{$this->config->urls->admin}module/edit?name={$this->className}",
+        'value' => __('Configuration'),
+        'icon' => 'cog'
+      );
+      $moduleConfigLinkButton = $this->populateInputField($this->modules->get('InputfieldButton'), $meta)->addClass('ui-priority-secondary ui-button-float-right');
+      $result .= $moduleConfigLinkButton->render();
+    $result .= '</div>';
+
+    return $result;
+  }
+  /**
+   * Prepares the output of cached visitor counts by year
+   */
+  private function renderCachedVisitorCountsYears($utcfrom, $utcto, $view, $start) {
+    $this->database->query('CREATE TABLE IF NOT EXISTS '.self::dbTableCache.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'tm timestamp NOT NULL,'.
+           'counts int(10) unsigned,'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(tm)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';');
+
+    $sql = "SELECT SQL_CALC_FOUND_ROWS UNIX_TIMESTAMP(tm), YEAR(tm) as yr, SUM(counts) AS totalcount FROM ".self::dbTableCache." WHERE tm >= FROM_UNIXTIME(:utcfrom) AND tm < FROM_UNIXTIME(:utcto) GROUP BY yr ORDER BY tm ASC LIMIT :start,:rowlimit";
+    $query = $this->database->prepare($sql);
+    $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_INT);
+    $query->bindValue(':utcto', (int) $utcto, \PDO::PARAM_INT);
+    $query->bindValue(':start', (int) $start, \PDO::PARAM_INT);
+    $query->bindValue(':rowlimit', (int) $this->row_limit, \PDO::PARAM_INT);
+    if (!$query->execute()) {
+      return 'Error: '.$query->errorCode().' '.print_r($query->errorInfo(), true);
+    }
+
+    $temp1 = $this->database->query("SELECT FOUND_ROWS()");
+    $temp2 = $temp1->fetch();
+    if (is_numeric($temp2[0])) {
+      $rows = $temp2[0];
+    } else {
+      $rows = 0;
+    }
+
+    $records = $query->fetchAll(\PDO::FETCH_ASSOC);
+
+    $max = 0;
+    foreach ($records as $record) {
+      if ($max < $record['totalcount']) $max = $record['totalcount'];
+    }
+
+    $result = '';
+
+    if ($this->row_limit < $rows) {
+      $result .= '<form method="POST" class="pvs_pagination">';
+      $result .= '<input type="hidden" name="day" id="day1" value="">';
+      $result .= '<input type="hidden" name="month" id="month1" value="">';
+      $result .= '<input type="hidden" name="year" id="year1" value="">';
+        $result .= '<input type="hidden" name="view" value="'.$view.'">';
+        $result .= '<select name="start" id="id_pageselect1" onchange="this.form.submit();"></select>';
+      $result .= '</form>';
+      $result .= '<div class="pvs_clear"></div>';
+    }
+
+    $result .= '<div class="dragscroll">';
+      $result .= '<div class="pvs_table">';
+        $result .= '<div class="pvs_thead">';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Year').'</div>';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Visitors').'</div>';
+          $result .= '<div class="pvs_th">'.__('Chart').'</div>';
+        $result .= '</div>';
+
+      $date = new \DateTime();
+      $lnmode = ' pvs_ln';
+      foreach ($records as $record) {
+        $date->setTimestamp($record['UNIX_TIMESTAMP(tm)']);
+        if ($lnmode == '') {
+          $lnmode = ' pvs_ln';
+        } else {
+          $lnmode = '';
+        }
+        $result .= '<div class="pvs_tr">';
+          $result .= '<div class="pvs_td pvs_alr'.$lnmode.'">'.$date->format('Y').'</div>';
+          $result .= '<div class="pvs_td pvs_alr'.$lnmode.'">'.$record['totalcount'].'</div>';
+          if ($max > 0) {
+            $chart = round(($record['totalcount'] / $max) * self::ChartMaxSize);
+          } else {
+            $chart = 0;
+          }
+          $result .= '<div class="pvs_td pvs_w100'.$lnmode.'">';
+            $result .= '<div class="pvs_chart">';
+              $result .= '<div class="pvs_chart_gauge" style="width:'.$chart.'px;"></div>';
+            $result .= '</div>';
+          $result .= '</div>';
+        $result .= '</div>';
+      }
+
+      $result .= '</div>';
+    $result .= '</div>';
+
+    if ($this->row_limit < $rows) {
+      $result .= '<form method="POST" class="pvs_pagination">';
+        $result .= '<input type="hidden" name="day" id="day2" value="">';
+        $result .= '<input type="hidden" name="month" id="month2" value="">';
+        $result .= '<input type="hidden" name="year" id="year2" value="">';
+        $result .= '<input type="hidden" name="view" value="'.$view.'">';
+        $result .= '<select name="start" id="id_pageselect2" onchange="this.form.submit();"></select>';
+      $result .= '</form>';
+      $result .= '<div class="pvs_clear"></div>';
+      $result .= '<script>';
+        $result .= 'document.getElementById("day1").value = document.getElementById("day").value;';
+        $result .= 'document.getElementById("day2").value = document.getElementById("day").value;';
+        $result .= 'document.getElementById("month1").value = document.getElementById("month").value;';
+        $result .= 'document.getElementById("month2").value = document.getElementById("month").value;';
+        $result .= 'document.getElementById("year1").value = document.getElementById("year").value;';
+        $result .= 'document.getElementById("year2").value = document.getElementById("year").value;';
+        $result .= 'var sel1 = document.getElementById("id_pageselect1");';
+        $result .= 'var sel2 = document.getElementById("id_pageselect2");';
+        $result .= 'for (var i = 0; i < '.$rows.'; i+='.$this->row_limit.') {';
+          $result .= 'var opt = document.createElement("option");';
+          $result .= 'if (('.$start.' >= i) && ('.$start.' < (i+'.$this->row_limit.'))) {';
+            $result .= 'opt.value = i;';
+            $result .= 'opt.selected = "selected"';
+          $result .= '} else {';
+            $result .= 'opt.value = i;';
+          $result .= '}';
+          $result .= 'if ((i+'.$this->row_limit.') > '.$rows.') {';
+            $result .= 'opt.text = (i+1) + " - " + '.$rows.' + " ";';
+          $result .= '} else {';
+            $result .= 'opt.text = (i+1) + " - " + (i+'.$this->row_limit.') + " ";';
+          $result .= '}';
+          $result .= 'var opt2 = opt.cloneNode(true);';
+          $result .= 'if (opt.selected != ""){';
+            $result .= 'opt2.selected = "selected";';
+          $result .= '}';
+          $result .= 'sel1.appendChild(opt);';
+          $result .= 'sel2.appendChild(opt2);';
+        $result .= '}';
+      $result .= '</script>';
+    }
+
+    return $result;
+  }
+  /**
+   * Prepares the output of cached visitor counts by month
+   */
+  private function renderCachedVisitorCountsMonths($utcfrom, $utcto, $view, $start) {
+    $this->database->query('CREATE TABLE IF NOT EXISTS '.self::dbTableCache.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'tm timestamp NOT NULL,'.
+           'counts int(10) unsigned,'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(tm)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';');
+
+    $sql = "SELECT SQL_CALC_FOUND_ROWS UNIX_TIMESTAMP(tm), MONTH(tm) as mt, YEAR(tm) as yr, SUM(counts) AS totalcount FROM ".self::dbTableCache." WHERE tm >= FROM_UNIXTIME(:utcfrom) AND tm < FROM_UNIXTIME(:utcto) GROUP BY yr,mt ORDER BY tm ASC LIMIT :start,:rowlimit";
+    $query = $this->database->prepare($sql);
+    $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_INT);
+    $query->bindValue(':utcto', (int) $utcto, \PDO::PARAM_INT);
+    $query->bindValue(':start', (int) $start, \PDO::PARAM_INT);
+    $query->bindValue(':rowlimit', (int) $this->row_limit, \PDO::PARAM_INT);
+    if (!$query->execute()) {
+      return 'Error: '.$query->errorCode().' '.print_r($query->errorInfo(), true);
+    }
+
+    $temp1 = $this->database->query("SELECT FOUND_ROWS()");
+    $temp2 = $temp1->fetch();
+    if (is_numeric($temp2[0])) {
+      $rows = $temp2[0];
+    } else {
+      $rows = 0;
+    }
+
+    $records = $query->fetchAll(\PDO::FETCH_ASSOC);
+
+    $max = 0;
+    foreach ($records as $record) {
+      if ($max < $record['totalcount']) $max = $record['totalcount'];
+    }
+
+    $result = '';
+
+    if ($this->row_limit < $rows) {
+      $result .= '<form method="POST" class="pvs_pagination">';
+      $result .= '<input type="hidden" name="day" id="day1" value="">';
+      $result .= '<input type="hidden" name="month" id="month1" value="">';
+      $result .= '<input type="hidden" name="year" id="year1" value="">';
+        $result .= '<input type="hidden" name="view" value="'.$view.'">';
+        $result .= '<select name="start" id="id_pageselect1" onchange="this.form.submit();"></select>';
+      $result .= '</form>';
+      $result .= '<div class="pvs_clear"></div>';
+    }
+
+    $result .= '<div class="dragscroll">';
+      $result .= '<div class="pvs_table">';
+        $result .= '<div class="pvs_thead">';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Month').'</div>';
+          if ($view <> self::ViewMonthsOfYear) {
+            $result .= '<div class="pvs_th pvs_alr">'.__('Year').'</div>';
+          }
+          $result .= '<div class="pvs_th pvs_alr">'.__('Visitors').'</div>';
+          $result .= '<div class="pvs_th">'.__('Chart').'</div>';
+        $result .= '</div>';
+
+      $date = new \DateTime();
+      $lnmode = ' pvs_ln';
+      foreach ($records as $record) {
+        $date->setTimestamp($record['UNIX_TIMESTAMP(tm)']);
+        if ($lnmode == '') {
+          $lnmode = ' pvs_ln';
+        } else {
+          $lnmode = '';
+        }
+        $result .= '<div class="pvs_tr">';
+          $result .= '<div class="pvs_td pvs_alr'.$lnmode.'">'.$date->format('F').'</div>';
+          if ($view <> self::ViewMonthsOfYear) {
+            $result .= '<div class="pvs_td pvs_alr'.$lnmode.'">'.$date->format('Y').'</div>';
+          }
+          $result .= '<div class="pvs_td pvs_alr'.$lnmode.'">'.$record['totalcount'].'</div>';
+          if ($max > 0) {
+            $chart = round(($record['totalcount'] / $max) * self::ChartMaxSize);
+          } else {
+            $chart = 0;
+          }
+          $result .= '<div class="pvs_td pvs_w100'.$lnmode.'">';
+            $result .= '<div class="pvs_chart">';
+              $result .= '<div class="pvs_chart_gauge" style="width:'.$chart.'px;"></div>';
+            $result .= '</div>';
+          $result .= '</div>';
+        $result .= '</div>';
+      }
+
+      $result .= '</div>';
+    $result .= '</div>';
+
+    if ($this->row_limit < $rows) {
+      $result .= '<form method="POST" class="pvs_pagination">';
+        $result .= '<input type="hidden" name="day" id="day2" value="">';
+        $result .= '<input type="hidden" name="month" id="month2" value="">';
+        $result .= '<input type="hidden" name="year" id="year2" value="">';
+        $result .= '<input type="hidden" name="view" value="'.$view.'">';
+        $result .= '<select name="start" id="id_pageselect2" onchange="this.form.submit();"></select>';
+      $result .= '</form>';
+      $result .= '<div class="pvs_clear"></div>';
+      $result .= '<script>';
+        $result .= 'document.getElementById("day1").value = document.getElementById("day").value;';
+        $result .= 'document.getElementById("day2").value = document.getElementById("day").value;';
+        $result .= 'document.getElementById("month1").value = document.getElementById("month").value;';
+        $result .= 'document.getElementById("month2").value = document.getElementById("month").value;';
+        $result .= 'document.getElementById("year1").value = document.getElementById("year").value;';
+        $result .= 'document.getElementById("year2").value = document.getElementById("year").value;';
+        $result .= 'var sel1 = document.getElementById("id_pageselect1");';
+        $result .= 'var sel2 = document.getElementById("id_pageselect2");';
+        $result .= 'for (var i = 0; i < '.$rows.'; i+='.$this->row_limit.') {';
+          $result .= 'var opt = document.createElement("option");';
+          $result .= 'if (('.$start.' >= i) && ('.$start.' < (i+'.$this->row_limit.'))) {';
+            $result .= 'opt.value = i;';
+            $result .= 'opt.selected = "selected"';
+          $result .= '} else {';
+            $result .= 'opt.value = i;';
+          $result .= '}';
+          $result .= 'if ((i+'.$this->row_limit.') > '.$rows.') {';
+            $result .= 'opt.text = (i+1) + " - " + '.$rows.' + " ";';
+          $result .= '} else {';
+            $result .= 'opt.text = (i+1) + " - " + (i+'.$this->row_limit.') + " ";';
+          $result .= '}';
+          $result .= 'var opt2 = opt.cloneNode(true);';
+          $result .= 'if (opt.selected != ""){';
+            $result .= 'opt2.selected = "selected";';
+          $result .= '}';
+          $result .= 'sel1.appendChild(opt);';
+          $result .= 'sel2.appendChild(opt2);';
+        $result .= '}';
+      $result .= '</script>';
+    }
+
+    return $result;
+  }
+  /**
+   * Prepares the output of cached visitor counts by day
+   */
+  private function renderCachedVisitorCountsDays($utcfrom, $utcto, $view, $start) {
+    $this->database->query('CREATE TABLE IF NOT EXISTS '.self::dbTableCache.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'tm timestamp NOT NULL,'.
+           'counts int(10) unsigned,'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(tm)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';');
+
+    $sql = "SELECT SQL_CALC_FOUND_ROWS UNIX_TIMESTAMP(tm), counts FROM ".self::dbTableCache." WHERE tm >= FROM_UNIXTIME(:utcfrom) AND tm < FROM_UNIXTIME(:utcto) ORDER BY tm ASC LIMIT :start,:rowlimit";
+    $query = $this->database->prepare($sql);
+    $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_INT);
+    $query->bindValue(':utcto', (int) $utcto, \PDO::PARAM_INT);
+    $query->bindValue(':start', (int) $start, \PDO::PARAM_INT);
+    $query->bindValue(':rowlimit', (int) $this->row_limit, \PDO::PARAM_INT);
+    if (!$query->execute()) {
+      return 'Error: '.$query->errorCode().' '.print_r($query->errorInfo(), true);
+    }
+
+    $temp1 = $this->database->query("SELECT FOUND_ROWS()");
+    $temp2 = $temp1->fetch();
+    if (is_numeric($temp2[0])) {
+      $rows = $temp2[0];
+    } else {
+      $rows = 0;
+    }
+
+    $records = $query->fetchAll(\PDO::FETCH_ASSOC);
+
+    $max = 0;
+    foreach ($records as $record) {
+      if ($max < $record['counts']) $max = $record['counts'];
+    }
+
+    $result = '';
+
+    if ($this->row_limit < $rows) {
+      $result .= '<form method="POST" class="pvs_pagination">';
+      $result .= '<input type="hidden" name="day" id="day1" value="">';
+      $result .= '<input type="hidden" name="month" id="month1" value="">';
+      $result .= '<input type="hidden" name="year" id="year1" value="">';
+        $result .= '<input type="hidden" name="view" value="'.$view.'">';
+        $result .= '<select name="start" id="id_pageselect1" onchange="this.form.submit();"></select>';
+      $result .= '</form>';
+      $result .= '<div class="pvs_clear"></div>';
+    }
+
+    $result .= '<div class="dragscroll">';
+      $result .= '<div class="pvs_table">';
+        $result .= '<div class="pvs_thead">';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Day').'</div>';
+          if ($view <> self::ViewDaysOfMonth) {
+            $result .= '<div class="pvs_th pvs_alr">'.__('Month').'</div>';
+            $result .= '<div class="pvs_th pvs_alr">'.__('Year').'</div>';
+          }
+          $result .= '<div class="pvs_th pvs_alr">'.__('Week Day').'</div>';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Visitors').'</div>';
+          $result .= '<div class="pvs_th">'.__('Chart').'</div>';
+        $result .= '</div>';
+
+      $date = new \DateTime();
+      $lnmode = ' pvs_ln';
+      foreach ($records as $record) {
+        $date->setTimestamp($record['UNIX_TIMESTAMP(tm)']);
+        if ($lnmode == '') {
+          $lnmode = ' pvs_ln';
+        } else {
+          $lnmode = '';
+        }
+        $result .= '<div class="pvs_tr">';
+          $result .= '<div class="pvs_td pvs_alr'.$lnmode.'">'.$date->format('j').'.</div>';
+          if ($view <> self::ViewDaysOfMonth) {
+            $result .= '<div class="pvs_td pvs_alr'.$lnmode.'">'.$date->format('F').'</div>';
+            $result .= '<div class="pvs_td pvs_alr'.$lnmode.'">'.$date->format('Y').'</div>';
+          }
+          $result .= '<div class="pvs_td pvs_alr'.$lnmode.'">'.$date->format('l').'</div>';
+          $result .= '<div class="pvs_td pvs_alr'.$lnmode.'">'.$record['counts'].'</div>';
+          if ($max > 0) {
+            $chart = round(($record['counts'] / $max) * self::ChartMaxSize);
+          } else {
+            $chart = 0;
+          }
+          $result .= '<div class="pvs_td pvs_w100'.$lnmode.'">';
+            $result .= '<div class="pvs_chart">';
+              $result .= '<div class="pvs_chart_gauge" style="width:'.$chart.'px;"></div>';
+            $result .= '</div>';
+          $result .= '</div>';
+        $result .= '</div>';
+      }
+
+      $result .= '</div>';
+    $result .= '</div>';
+
+    if ($this->row_limit < $rows) {
+      $result .= '<form method="POST" class="pvs_pagination">';
+        $result .= '<input type="hidden" name="day" id="day2" value="">';
+        $result .= '<input type="hidden" name="month" id="month2" value="">';
+        $result .= '<input type="hidden" name="year" id="year2" value="">';
+        $result .= '<input type="hidden" name="view" value="'.$view.'">';
+        $result .= '<select name="start" id="id_pageselect2" onchange="this.form.submit();"></select>';
+      $result .= '</form>';
+      $result .= '<div class="pvs_clear"></div>';
+      $result .= '<script>';
+        $result .= 'document.getElementById("day1").value = document.getElementById("day").value;';
+        $result .= 'document.getElementById("day2").value = document.getElementById("day").value;';
+        $result .= 'document.getElementById("month1").value = document.getElementById("month").value;';
+        $result .= 'document.getElementById("month2").value = document.getElementById("month").value;';
+        $result .= 'document.getElementById("year1").value = document.getElementById("year").value;';
+        $result .= 'document.getElementById("year2").value = document.getElementById("year").value;';
+        $result .= 'var sel1 = document.getElementById("id_pageselect1");';
+        $result .= 'var sel2 = document.getElementById("id_pageselect2");';
+        $result .= 'for (var i = 0; i < '.$rows.'; i+='.$this->row_limit.') {';
+          $result .= 'var opt = document.createElement("option");';
+          $result .= 'if (('.$start.' >= i) && ('.$start.' < (i+'.$this->row_limit.'))) {';
+            $result .= 'opt.value = i;';
+            $result .= 'opt.selected = "selected"';
+          $result .= '} else {';
+            $result .= 'opt.value = i;';
+          $result .= '}';
+          $result .= 'if ((i+'.$this->row_limit.') > '.$rows.') {';
+            $result .= 'opt.text = (i+1) + " - " + '.$rows.' + " ";';
+          $result .= '} else {';
+            $result .= 'opt.text = (i+1) + " - " + (i+'.$this->row_limit.') + " ";';
+          $result .= '}';
+          $result .= 'var opt2 = opt.cloneNode(true);';
+          $result .= 'if (opt.selected != ""){';
+            $result .= 'opt2.selected = "selected";';
+          $result .= '}';
+          $result .= 'sel1.appendChild(opt);';
+          $result .= 'sel2.appendChild(opt2);';
+        $result .= '}';
+      $result .= '</script>';
+    }
+
+    return $result;
+  }
+  /**
+   * Prepares the output of detailed records
+   */
+  private function renderDetailedRecords($utcfrom, $utcto, $start) {
+    $sql = "SELECT SQL_CALC_FOUND_ROWS ".
+           "UNIX_TIMESTAMP(tm),vt,i.ip,c.country,c.countryimg,b.browser,b.browserimg,o.os,o.osimg,p.page,r.origin ".
+           "FROM ".self::dbTableMain." m ".
+           "JOIN ".self::dbTableIp." i ON m.ip_id = i.id ".
+           "JOIN ".self::dbTableCountry." c ON m.country_id = c.id ".
+           "JOIN ".self::dbTableBrowser." b ON m.browser_id = b.id ".
+           "JOIN ".self::dbTableOs." o ON m.os_id = o.id ".
+           "JOIN ".self::dbTablePage." p ON m.page_id = p.id ".
+           "JOIN ".self::dbTableOrigin." r ON m.origin_id = r.id ".
+           "WHERE tm >= FROM_UNIXTIME(:utcfrom) AND tm < FROM_UNIXTIME(:utcto) ".
+           "ORDER BY tm DESC LIMIT :start,:rowlimit";
+    $query = $this->database->prepare($sql);
+    $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_INT);
+    $query->bindValue(':utcto', (int) $utcto, \PDO::PARAM_INT);
+    $query->bindValue(':start', (int) $start, \PDO::PARAM_INT);
+    $query->bindValue(':rowlimit', (int) $this->row_limit, \PDO::PARAM_INT);
+    if (!$query->execute()) {
+      return 'Error: '.$query->errorCode().' '.print_r($query->errorInfo(), true);
+    }
+
+    $temp1 = $this->database->query("SELECT FOUND_ROWS()");
+    $temp2 = $temp1->fetch();
+    if (is_numeric($temp2[0])) {
+      $rows = $temp2[0];
+    } else {
+      $rows = 0;
+    }
+
+    $module_url = $this->config()->urls->siteModules.$this->className;
+    $result = '';
+
+    if ($this->row_limit < $rows) {
+      $result .= '<form method="POST" class="pvs_pagination">';
+        $result .= '<input type="hidden" name="day" id="day1" value="">';
+        $result .= '<input type="hidden" name="month" id="month1" value="">';
+        $result .= '<input type="hidden" name="year" id="year1" value="">';
+        $result .= '<input type="hidden" name="view" value="'.self::ViewDetailedRecords.'">';
+        $result .= '<select name="start" id="id_pageselect1" onchange="this.form.submit();"></select>';
+      $result .= '</form>';
+      $result .= '<div class="pvs_clear"></div>';
+    }
+
+    $result .= '<div class="dragscroll">';
+      $result .= '<div class="pvs_table">';
+        $result .= '<div class="pvs_thead">';
+          $result .= '<div class="pvs_th"><abbr title="'.__('Time, relative to the specified timezone').'">'.__('Time').'</abbr></div>';
+          $result .= '<div class="pvs_th"><abbr title="'.__('Country of IP address').'">'.__('C.').'</abbr></div>';
+          $result .= '<div class="pvs_th">'.__('IP address').'</div>';
+          $result .= '<div class="pvs_th"><abbr title="'.__('Operating system').'">'.__('O.').'</abbr></div>';
+          $result .= '<div class="pvs_th"><abbr title="'.__('Browser').'">'.__('B.').'</abbr></div>';
+          if ($this->record_time == '1') {
+            $result .= '<div class="pvs_th"><abbr title="'.__('Time of view in seconds').'">'.__('S.').'</abbr></div>';
+          }
+          $result .= '<div class="pvs_th">'.__('Page').'</div>';
+          $result .= '<div class="pvs_th">'.__('Origin').'</div>';
+        $result .= '</div>';
+      $datetime = new \DateTime();
+      $datetime->setTimezone(new \DateTimeZone($this->time_zone));
+      $lnmode = ' pvs_ln';
+      while ($record = $query->fetch(\PDO::FETCH_ASSOC)) {
+        if ($lnmode == '') {
+          $lnmode = ' pvs_ln';
+        } else {
+          $lnmode = '';
+        }
+        $result .= '<div class="pvs_tr">';
+          $result .= '<div class="pvs_tt'.$lnmode.'">';
+            $datetime->setTimestamp($record['UNIX_TIMESTAMP(tm)']);
+            $result .= $datetime->format($this->time_format);
+          $result .= '</div>';
+          $result .= '<div class="pvs_td'.$lnmode.'">';
+            $result .= '<img class="pvs_img" src="'.$module_url.'/images/country/'.$record['countryimg'].'.png" alt="'.$record['country'].'" title="'.$record['country'].'" />';
+          $result .= '</div>';
+          $result .= '<div class="pvs_td'.$lnmode.'">';
+            $result .= '<a href="'.sprintf($this->whois_service, $record['ip']).'" target="_blank">'.$record['ip'].'</a>';
+          $result .= '</div>';
+          $result .= '<div class="pvs_td'.$lnmode.'">';
+            $result .= '<img class="pvs_img" src="'.$module_url.'/images/os/'.$record['osimg'].'.png" alt="'.$record['os'].'" title="'.$record['os'].'" />';
+          $result .= '</div>';
+          $result .= '<div class="pvs_td'.$lnmode.'">';
+            $result .= '<img class="pvs_img" src="'.$module_url.'/images/browser/'.$record['browserimg'].'.png" alt="'.$record['browser'].'" title="'.$record['browser'].'" />';
+          $result .= '</div>';
+          if ($this->record_time == '1') {
+            $result .= '<div class="pvs_td'.$lnmode.'">';
+            if ((isset($record['vt'])) && ($record['vt'] != '0')) {
+              $result .= $record['vt'];
+            } else {
+              $result .= '-';
+            }
+            $result .= '</div>';
+          }
+          $result .= '<div class="pvs_td'.$lnmode.'">';
+            $result .= '<a href="'.$record['page'].'" target="_blank">'.$record['page'].'</a>';
+          $result .= '</div>';
+          $result .= '<div class="pvs_td'.$lnmode.'">';
+            $result .= '<a href="'.$record['origin'].'" target="_blank">'.$record['origin'].'</a>';
+          $result .= '</div>';
+        $result .= '</div>';
+      }
+      $result .= '</div>';
+    $result .= '</div>';
+
+    if ($this->row_limit < $rows) {
+      $result .= '<form method="POST" class="pvs_pagination">';
+        $result .= '<input type="hidden" name="day" id="day2" value="">';
+        $result .= '<input type="hidden" name="month" id="month2" value="">';
+        $result .= '<input type="hidden" name="year" id="year2" value="">';
+        $result .= '<input type="hidden" name="view" value="'.self::ViewDetailedRecords.'">';
+        $result .= '<select name="start" id="id_pageselect2" onchange="this.form.submit();"></select>';
+      $result .= '</form>';
+      $result .= '<div class="pvs_clear"></div>';
+      $result .= '<script>';
+        $result .= 'document.getElementById("day1").value = document.getElementById("day").value;';
+        $result .= 'document.getElementById("day2").value = document.getElementById("day").value;';
+        $result .= 'document.getElementById("month1").value = document.getElementById("month").value;';
+        $result .= 'document.getElementById("month2").value = document.getElementById("month").value;';
+        $result .= 'document.getElementById("year1").value = document.getElementById("year").value;';
+        $result .= 'document.getElementById("year2").value = document.getElementById("year").value;';
+        $result .= 'var sel1 = document.getElementById("id_pageselect1");';
+        $result .= 'var sel2 = document.getElementById("id_pageselect2");';
+        $result .= 'for (var i = 0; i < '.$rows.'; i+='.$this->row_limit.') {';
+          $result .= 'var opt = document.createElement("option");';
+          $result .= 'if (('.$start.' >= i) && ('.$start.' < (i+'.$this->row_limit.'))) {';
+            $result .= 'opt.value = i;';
+            $result .= 'opt.selected = "selected"';
+          $result .= '} else {';
+            $result .= 'opt.value = i;';
+          $result .= '}';
+          $result .= 'if ((i+'.$this->row_limit.') > '.$rows.') {';
+            $result .= 'opt.text = (i+1) + " - " + '.$rows.' + " ";';
+          $result .= '} else {';
+            $result .= 'opt.text = (i+1) + " - " + (i+'.$this->row_limit.') + " ";';
+          $result .= '}';
+          $result .= 'var opt2 = opt.cloneNode(true);';
+          $result .= 'if (opt.selected != ""){';
+            $result .= 'opt2.selected = "selected";';
+          $result .= '}';
+          $result .= 'sel1.appendChild(opt);';
+          $result .= 'sel2.appendChild(opt2);';
+        $result .= '}';
+      $result .= '</script>';
+    }
+
+    return $result;
+  }
+  /**
+   * Older approach to prepare the output the visitor counts by day (not cached)
+   * only for testing purposes, will be removed in later versions
+   */
+  private function renderRecordsDays($utcfrom, $utcto, $month, $year) {
+    $result = '';
+
+    $dateTimeZone = new \DateTimeZone($this->time_zone);
+    $offset = $dateTimeZone->getOffset(new \DateTime('now', new \DateTimeZone('UTC')));
+    if ($offset < 0) {
+      $timeoffset = '-'.gmdate('H:i', -$offset);
+    } else {
+      $timeoffset = '+'.gmdate('H:i', $offset);
+    }
+
+    $sql = "SELECT DAY(CONVERT_TZ(tm,@@session.time_zone,:timeoffset)) as dt, COUNT(DISTINCT ip_id) AS totalcount FROM ".self::dbTableMain." WHERE tm >= FROM_UNIXTIME(:utcfrom) AND tm < FROM_UNIXTIME(:utcto) GROUP BY dt ASC";
+    $query = $this->database->prepare($sql);
+    $query->bindValue(':timeoffset', $timeoffset, \PDO::PARAM_STR);
+    $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_INT);
+    $query->bindValue(':utcto', (int) $utcto, \PDO::PARAM_INT);
+    if (!$query->execute()) {
+      return 'Error: '.$query->errorCode().' '.print_r($query->errorInfo(), true);
+    }
+
+    $records = $query->fetchAll(\PDO::FETCH_ASSOC);
+
+    $max = 0;
+    foreach ($records as $record) {
+      if ($max < $record['totalcount']) $max = $record['totalcount'];
+    }
+
+    $result .= '<div class="dragscroll">';
+      $result .= '<div class="pvs_table">';
+        $result .= '<div class="pvs_thead">';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Day').'</div>';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Week Day').'</div>';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Visitors').'</div>';
+          $result .= '<div class="pvs_th">'.__('Chart').'</div>';
+        $result .= '</div>';
+      $daysofmonth = cal_days_in_month(CAL_GREGORIAN, $month, $year);
+      for ($i = 1; $i <= $daysofmonth; $i++) {
+        $result .= '<div class="pvs_tr">';
+          $result .= '<div class="pvs_td pvs_alr">'.$i.'.</div>';
+          $result .= '<div class="pvs_td pvs_alr">'.date('l', mktime(0, 0, 0, $month, $i, $year)).'</div>';
+          $totalcount = 0;
+          foreach ($records as $record) {
+            if ($record['dt'] == sprintf('%02d', $i)) {
+              $totalcount = $record['totalcount'];
+              break;
+            };
+          }
+          $result .= '<div class="pvs_td pvs_alr">'.$totalcount.'</div>';
+          if ($max > 0) {
+            $chart = round(($totalcount / $max) * self::ChartMaxSize);
+          } else {
+            $chart = 0;
+          }
+          $result .= '<div class="pvs_td pvs_w100">';
+            $result .= '<div class="pvs_chart">';
+              $result .= '<div class="pvs_chart_gauge" style="width:'.$chart.'px;"></div>';
+            $result .= '</div>';
+          $result .= '</div>';
+        $result .= '</div>';
+      }
+      $result .= '</div>';
+    $result .= '</div>';
+    return $result;
+  }
+  /**
+   * Older approach to prepare the output the visitor counts by month (not cached)
+   * only for testing purposes, will be removed in later versions
+   */
+  private function renderRecordsMonths($utcfrom, $utcto) {
+    $result = '';
+
+    $dateTimeZone = new \DateTimeZone($this->time_zone);
+    $offset = $dateTimeZone->getOffset(new \DateTime('now', new \DateTimeZone('UTC')));
+    if ($offset < 0) {
+      $timeoffset = '-'.gmdate('H:i', -$offset);
+    } else {
+      $timeoffset = '+'.gmdate('H:i', $offset);
+    }
+
+    $sql = "SELECT MONTH(CONVERT_TZ(tm,@@session.time_zone,:timeoffset)) as mt, COUNT(DISTINCT ip_id) AS totalcount FROM ".self::dbTableMain." WHERE tm >= FROM_UNIXTIME(:utcfrom) AND tm < FROM_UNIXTIME(:utcto) GROUP BY mt ASC";
+    $query = $this->database->prepare($sql);
+    $query->bindValue(':timeoffset', $timeoffset, \PDO::PARAM_STR);
+    $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_INT);
+    $query->bindValue(':utcto', (int) $utcto, \PDO::PARAM_INT);
+    if (!$query->execute()) {
+      return 'Error: '.$query->errorCode().' '.print_r($query->errorInfo(), true);
+    }
+
+    $records = $query->fetchAll(\PDO::FETCH_ASSOC);
+
+    $max = 0;
+    foreach ($records as $record) {
+      if ($max < $record['totalcount']) $max = $record['totalcount'];
+    }
+
+    $result .= '<div class="dragscroll">';
+      $result .= '<div class="pvs_table">';
+        $result .= '<div class="pvs_thead">';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Month').'</div>';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Visitors').'</div>';
+          $result .= '<div class="pvs_th">'.__('Chart').'</div>';
+        $result .= '</div>';
+      for ($i = 1; $i <= 12; $i++) {
+        $result .= '<div class="pvs_tr">';
+          $result .= '<div class="pvs_td pvs_alr">'.date('F', mktime(0, 0, 0, $i, 1, 1970)).'</div>';
+          $totalcount = 0;
+          foreach ($records as $record) {
+            if ($record['mt'] == sprintf('%02d', $i)) {
+              $totalcount = $record['totalcount'];
+            };
+          }
+          $result .= '<div class="pvs_td pvs_alr">'.$totalcount.'</div>';
+          if ($max > 0) {
+            $chart = round(($totalcount / $max) * self::ChartMaxSize);
+          } else {
+            $chart = 0;
+          }
+          $result .= '<div class="pvs_td pvs_w100">';
+            $result .= '<div class="pvs_chart">';
+              $result .= '<div class="pvs_chart_gauge" style="width:'.$chart.'px;"></div>';
+            $result .= '</div>';
+          $result .= '</div>';
+        $result .= '</div>';
+      }
+      $result .= '</div>';
+    $result .= '</div>';
+
+    return $result;
+  }
+  /**
+   * Older approach to prepare the output the visitor counts by year (not cached)
+   * only for testing purposes, will be removed in later versions
+   */
+  private function renderRecordsYears() {
+    $result = '';
+
+    $dateTimeZone = new \DateTimeZone($this->time_zone);
+    $offset = $dateTimeZone->getOffset(new \DateTime('now', new \DateTimeZone('UTC')));
+    if ($offset < 0) {
+      $timeoffset = '-'.gmdate('H:i', -$offset);
+    } else {
+      $timeoffset = '+'.gmdate('H:i', $offset);
+    }
+
+    $sql = "SELECT YEAR(CONVERT_TZ(tm,@@session.time_zone,:timeoffset)) as yt, COUNT(DISTINCT ip_id) AS totalcount FROM ".self::dbTableMain." GROUP BY yt ASC";
+    $query = $this->database->prepare($sql);
+    $query->bindValue(':timeoffset', $timeoffset, \PDO::PARAM_STR);
+    if (!$query->execute()) {
+      return 'Error: '.$query->errorCode().' '.print_r($query->errorInfo(), true);
+    }
+
+    $records = $query->fetchAll(\PDO::FETCH_ASSOC);
+
+    $max = 0;
+    $first_year = 0;
+    $last_year = $first_year - 1;
+    foreach ($records as $record) {
+      if ($max < $record['totalcount']) $max = $record['totalcount'];
+      if ($first_year == 0) {
+        $first_year = $record['yt'];
+      } else {
+        if ($first_year > $record['yt']) $first_year = $record['yt'];
+      }
+      if ($last_year < $record['yt']) $last_year = $record['yt'];
+    }
+
+    $result .= '<div class="dragscroll">';
+      $result .= '<div class="pvs_table">';
+        $result .= '<div class="pvs_thead">';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Year').'</div>';
+          $result .= '<div class="pvs_th pvs_alr">'.__('Visitors').'</div>';
+          $result .= '<div class="pvs_th">'.__('Chart').'</div>';
+        $result .= '</div>';
+      for ($i = $first_year; $i <= $last_year; $i++) {
+        $result .= '<div class="pvs_tr">';
+          $result .= '<div class="pvs_td pvs_alr">'.$i.'</div>';
+          $totalcount = 0;
+          foreach ($records as $record) {
+            if ($record['yt'] == $i) {
+              $totalcount = $totalcount + $record['totalcount'];
+            };
+          }
+          $result .= '<div class="pvs_td pvs_alr">'.$totalcount.'</div>';
+          if ($max > 0) {
+            $chart = round(($totalcount / $max) * self::ChartMaxSize);
+          } else {
+            $chart = 0;
+          }
+          $result .= '<div class="pvs_td pvs_w100">';
+            $result .= '<div class="pvs_chart">';
+              $result .= '<div class="pvs_chart_gauge" style="width:'.$chart.'px;"></div>';
+            $result .= '</div>';
+          $result .= '</div>';
+        $result .= '</div>';
+      }
+      $result .= '</div>';
+    $result .= '</div>';
+
+    return $result;
+  }
+  /**
+   * Generates a link to the configuration page
+   */
+  private function populateInputField($field, $meta) {
+    foreach ($meta as $metaNames => $metaInfo) {
+      $metaNames = explode('+', $metaNames);
+      foreach ($metaNames as $metaName) {
+        $field->$metaName = $metaInfo;
+      }
+    }
+    return $field;
+  }
+  /**
+   * Convert timestamp
+   */
+  private function timezone_timestamp($timestamp, $from_timeZone, $to_timezone) {
+    $date1 = new \DateTime();
+    $date1->setTimezone(new \DateTimeZone($to_timezone));
+    $date1->setTimestamp($timestamp);
+    $dtstr = $date1->format('Y-m-d H:i:s');
+    $date2 = new \DateTime($dtstr, new \DateTimeZone($from_timeZone));
+    return $date2->format('U');
+  }
+  /**
+   * Removes the time from a timestamp
+   */
+  private function cut_time($timestamp) {
+    return floor($timestamp/86400)*86400;
+  }
+  /**
+   * Returns timestamp in UTC
+   */
+  private function get_utc() {
+    $utc = new \DateTime(null, new \DateTimeZone('UTC'));
+    return $utc->getTimestamp();
+  }
+  /**
+   * Builds or updates the cache
+   */
+  private function update_cache() {
+    $this->database->query('CREATE TABLE IF NOT EXISTS '.self::dbTableCache.' ('.
+           'id int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+           'tm timestamp NOT NULL,'.
+           'counts int(10) unsigned,'.
+           'PRIMARY KEY(id),'.
+           'UNIQUE INDEX(tm)'.
+           ') ENGINE='.$this->wire('config')->dbEngine.' DEFAULT CHARSET='.$this->wire('config')->dbCharset.';');
+
+    $tm = 0;
+    $query = $this->database->prepare("SELECT UNIX_TIMESTAMP(tm) FROM ".self::dbTableCache." GROUP BY tm DESC LIMIT 1");
+    if ($query->execute()) {
+      $record = $query->fetch(\PDO::FETCH_ASSOC);
+      if (($record !== false) && (isset($record['UNIX_TIMESTAMP(tm)']))) {
+        $tm = $record['UNIX_TIMESTAMP(tm)'];
+      }
+    }
+
+    if ($tm == 0) {
+      $query = $this->database->prepare("SELECT UNIX_TIMESTAMP(tm) FROM ".self::dbTableMain." GROUP BY tm ASC LIMIT 1");
+      if (!$query->execute()) {
+        wire('log')->error($this->className.' SELECT '.self::dbTableMain.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+        return;
+      }
+      $record = $query->fetch(\PDO::FETCH_ASSOC);
+      if (!$record || !isset($record['UNIX_TIMESTAMP(tm)'])) {
+        // no records
+        return;
+      }
+      
+      $tm = $record['UNIX_TIMESTAMP(tm)'];
+      if ($tm == 0) {
+        return;
+      }
+      $tm = $this->timezone_timestamp($tm, 'UTC', $this->time_zone);
+      $tm = $this->cut_time($tm);
+    }
+
+    $utcfrom = $this->timezone_timestamp($tm, $this->time_zone, 'UTC');
+    $utcto = $utcfrom + 86400;
+    $current = $this->get_utc();
+    set_time_limit(3600);
+    while ($utcfrom < $current) {
+      $query = $this->database->prepare("SELECT COUNT(DISTINCT ip_id) AS totalcount FROM ".self::dbTableMain." WHERE tm >= FROM_UNIXTIME(:utcfrom) AND tm < FROM_UNIXTIME(:utcto)");
+      $query->bindValue(':utcfrom', (int) $utcfrom, \PDO::PARAM_INT);
+      $query->bindValue(':utcto', (int) $utcto, \PDO::PARAM_INT);
+      if (!$query->execute()) {
+        wire('log')->error($this->className.' SELECT '.self::dbTableMain.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+        return;
+      }
+
+      $record = $query->fetch(\PDO::FETCH_ASSOC);
+      if (($record !== false) && (isset($record['totalcount']))) {
+        $totalcount = intval($record['totalcount']);
+        if ($totalcount > 0) {
+          $query = $this->database->prepare("INSERT INTO ".self::dbTableCache." (tm,counts) VALUES (FROM_UNIXTIME(:tm),:counts) ON DUPLICATE KEY UPDATE tm = FROM_UNIXTIME(:tm), counts = :counts");
+          $query->bindValue(':tm', (int) $tm, \PDO::PARAM_STR);
+          $query->bindValue(':counts', (int) $totalcount, \PDO::PARAM_STR);
+          if (!$query->execute()) {
+            wire('log')->error($this->className.' INSERT '.self::dbTableCache.' '.$query->errorCode().' '.print_r($query->errorInfo(), true));
+            return;
+          }
+        }
+      }
+
+      $tm = $tm + 86400;
+      $utcfrom = $this->timezone_timestamp($tm, $this->time_zone, 'UTC');
+      $utcto = $utcfrom + 86400;
+    }
+    wire('log')->message($this->className.' cache updated');
+  }
+}
