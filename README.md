@@ -16,14 +16,17 @@ There is only one disadvantage. This module doesn't record visits if the browser
 
 ## How to use
 The records can be accessed via the Setup-menu of the CMS backend. The first dropdown control changes the view mode.
+
 !["Select a view mode"](https://tech-c.net/site/assets/files/1188/view-mode.jpg)
 
 ## Detailed records
 View mode **Detailed records** shows all visits of the selected day individually with IP-address, browser, operating system, requested page and originate page. Click the update button to see new added records.
+
 !["Screenshot showing view mode detailed records"](https://tech-c.net/site/assets/files/1188/detailed-records.jpg)
 
 ## Cached visitor records
 View modes other than **Detailed records** are cached visitor counts which will be collected on a daily basis from the detailed records. This procedure ensures a faster display even with a large number of data records. Another advantage is that the detailed records can be deleted while the cache remains. The cache can be updated manually or automatically in a specified time period. Multiple visits from the same IP address on the same day are counted as a single visitor.
+
 !["Screenshot showing view mode months of year"](https://tech-c.net/site/assets/files/1188/cached-visitor-records.jpg)
 
 ## Upgrade from older versions
@@ -31,6 +34,7 @@ Cached visitor counts is new in version 1.0.8. If you just upgraded from an olde
 
 ## Special Feature
 PageViewStatistic for ProcessWire can record the time a visitor viewed the page. This feature is deactivated by default. To activate open the module configuration page and activate "Record view time". If activated you will find a new column **S.** in the records which means the time of view in seconds. With every page request, a Javascript code is insert directly after the <body> tag. Every time the visitor switches to another tab or closes the tab, this script reports the number of seconds the tab was visible. The initial page request is recorded only as a hyphen (-).
+  
 !["Screenshot showing time of view"](https://tech-c.net/site/assets/files/1188/time-of-view.jpg)
 
 ## Settings
