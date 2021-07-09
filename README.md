@@ -34,8 +34,11 @@ Cached visitor counts is new in version 1.0.8. If you just upgraded from an olde
 
 ## Special Feature
 PageViewStatistic for ProcessWire can record the time a visitor viewed the page. This feature is deactivated by default. To activate open the module configuration page and activate "Record view time". If activated you will find a new column **S.** in the records which means the time of view in seconds. With every page request, a Javascript code is insert directly after the <body> tag. Every time the visitor switches to another tab or closes the tab, this script reports the number of seconds the tab was visible. The initial page request is recorded only as a hyphen (-).
-  
+
 !["Screenshot showing time of view"](https://tech-c.net/site/assets/files/1188/time-of-view.jpg)
+
+## New in version 1.1.0
+A new feature comes with version 1.1.0 which offers to record user names of loggedin visitors. Just activate "Record user names" and "Record loggedin user" in the module settings.
 
 ## Settings
 You can access the module settings by clicking the Configuration button at the bottom of the records page. The settings page is also available in the menu: Modules->Configure->ProcessPageViewStat.
