@@ -10,7 +10,7 @@
  * @version 1.1.3
  * 
  * @see Forum Thread: https://processwire.com/talk/topic/24189-pageviewstatistic-for-processwire/
- * @see Donate: https://www.paypal.me/techcnet/
+ * @see Donate: https://tech-c.net/donation/
  */
 
 class ProcessPageViewStatConfig extends ModuleConfig {
@@ -346,7 +346,7 @@ class ProcessPageViewStatConfig extends ModuleConfig {
     ProcessPageViewStat @ <a href="https://github.com/techcnet/ProcessPageViewStat">github.com</a><br>
     ProcessPageViewStat @ <a href="https://tech-c.net/posts/page-view-statistic-for-processwire/">tech-c.net</a>
     </p>
-    <a target="_blank" href="https://www.paypal.me/techcnet/"><img style="margin:auto;" src="'.wire('config')->urls->siteModules.'ProcessPageViewStat'.'/images/donate.png" /></a>';
+    <a target="_blank" href="https://tech-c.net/donation/"><img style="margin:auto;" src="'.wire('config')->urls->siteModules.'ProcessPageViewStat'.'/images/donate.png" /></a>';
     $field->collapsed = Inputfield::collapsedNever;
     $fieldset->add($field);
     
