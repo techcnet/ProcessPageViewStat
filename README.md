@@ -56,3 +56,4 @@ This module uses DragScroll a JavaScript available from: http://github.com/asvd/
 
 ## User-Agent-Parser
 This module uses the PHP class User-Agent-Parser available from: http://www.toms-world.org/blog/parseuseragentstring/. This class is required to filter out the browser type and operating system from the server request.
+  
