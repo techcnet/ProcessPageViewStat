@@ -41,7 +41,7 @@ PageViewStatistic for ProcessWire can record the time a visitor viewed the page.
 A new feature in version 1.1.0 offers the possibility to record user names of logged in visitors. Just activate "Record user names" and "Record loggedin user" in the module settings.
 
 ## New in version 1.1.3
-New in version 1.1.3 is an internal WHOIS feature (see screenshot below). The configuration offers an option to switch between internal and external WHOIS.
+A new feature in version 1.1.3 offers an internal WHOIS function. In the module settings you can switch between internal and external WHOIS.
 
 !["Internal WHOIS feature"](https://tech-c.net/site/assets/files/1188/whois.jpg)
 
