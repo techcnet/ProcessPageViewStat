@@ -33,12 +33,12 @@ View modes other than **Detailed records** are cached visitor counts which will 
 Cached visitor counts is new in version 1.0.8. If you just upgraded from an older version you might expire a delay or even an error 500 if you display cached visitor counts. The reason for this is that the cache has to be created from the records. This can take longer if your database contains many records. Sometimes it might hit the maximally execution time. Don't be worry about that and keep reloading the page until the cache is completely created.
 
 ## Special Feature
-PageViewStatistic for ProcessWire can record the time a visitor viewed the page. This feature is deactivated by default. To activate open the module configuration page and activate "Record view time". If activated you will find a new column **S.** in the records which means the time of view in seconds. With every page request, a Javascript code is insert directly after the <body> tag. Every time the visitor switches to another tab or closes the tab, this script reports the number of seconds the tab was visible. The initial page request is recorded only as a hyphen (-).
+PageViewStatistic for ProcessWire can record the time a visitor viewed the page. This feature is deactivated by default. To activate open the module configuration page and activate **Record view time**. If activated you will find a new column **S.** in the records which means the time of view in seconds. With every page request, a Javascript code is insert directly after the <body> tag. Every time the visitor switches to another tab or closes the tab, this script reports the number of seconds the tab was visible. The initial page request is recorded only as a hyphen (-).
 
 !["Time of view"](https://tech-c.net/site/assets/files/1188/time-of-view.jpg)
 
 ## New in version 1.1.0
-A new feature in version 1.1.0 offers the possibility to record user names of logged in visitors. Just activate "Record user names" and "Record loggedin user" in the module settings.
+A new feature in version 1.1.0 offers the possibility to record user names of logged in visitors. Just activate **Record user names** and **Record loggedin user** in the module settings.
 
 ## New in version 1.1.3
 A new feature in version 1.1.3 offers an internal WHOIS function. In the module settings you can switch between internal and external WHOIS.
@@ -52,7 +52,7 @@ You can access the module settings by clicking the Configuration button at the b
 This module uses the IP2Location database from: http://www.ip2location.com. This database is required to obtain the country from the IP address. IP2Location updates this database at the begin of every month. The settings of ProcessPageViewStat offers the ability to automatically download the database monthly. Please note, that automatically download will not work if your webspace doesn't allow allow_url_fopen.
 
 ## Dragscroll
-This module uses DragScroll a JavaScript available from: http://github.com/asvd/dragscroll. Dragscroll adds the ability in view mode "Day" to drag the records horizontally with the mouse pointer.
+This module uses DragScroll a JavaScript available from: http://github.com/asvd/dragscroll. Dragscroll adds the ability in view mode **Day** to drag the records horizontally with the mouse pointer.
 
 ## User-Agent-Parser
 This module uses the PHP class User-Agent-Parser available from: http://www.toms-world.org/blog/parseuseragentstring/. This class is required to filter out the browser type and operating system from the server request.
