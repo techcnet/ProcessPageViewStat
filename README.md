@@ -38,10 +38,10 @@ PageViewStatistic for ProcessWire can record the time a visitor viewed the page.
 !["Time of view"](https://tech-c.net/site/assets/files/1188/time-of-view.jpg)
 
 ## New in version 1.1.0
-A new feature comes with version 1.1.0 which offers to record user names of loggedin visitors. Just activate "Record user names" and "Record loggedin user" in the module settings.
+A new feature in version 1.1.0 offers the possibility to record user names of logged in visitors. Just activate "Record user names" and "Record loggedin user" in the module settings.
 
 ## New in version 1.1.3
-New in version 1.1.3 is a internal WHOIS feature (see screenshot below). The internal WHOIS feature shows IP information in a JavaScript dialog instead of a new page as like with the external WHOIS feature. The configuration offers an option to switch between internal and external WHOIS.
+New in version 1.1.3 is an internal WHOIS feature (see screenshot below). The configuration offers an option to switch between internal and external WHOIS.
 
 !["Internal WHOIS feature"](https://tech-c.net/site/assets/files/1188/whois.jpg)
 
