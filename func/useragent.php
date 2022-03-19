@@ -1298,7 +1298,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \(.*\) AppleWebKit/[0-9.]* \(KHTML,{0,1} like Gecko\) Qt/([0-9.]*)%i', $userAgent, $matches)) {
 			$browserName = "Qt Integrated Browser";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = $t[1];
@@ -1322,7 +1322,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \(.*\) AppleWebKit/[0-9.]* \(KHTML,{0,1} like Gecko\) lswebkit Safari/[0-9.]* Lunascape/([0-9.]*) Safari/[0-9.]*%i', $userAgent, $matches)) {
 			$browserName = "Lunascape (WebKit Mode)";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = $t[1];
@@ -1346,7 +1346,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \(.*\) AppleWebKit/[0-9.]*\+{0,1} Safari/([0-9.]*)%i', $userAgent, $matches)) {
 			$browserName = "Safari";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = $t[1];
@@ -1370,7 +1370,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \(Macintosh; .*\) AppleWebKit/[0-9.]*\+{0,1} \(KHTML,{0,1} like Gecko\) Version/([0-9.]*) Safari/[0-9.]*%i', $userAgent, $matches)) {
 			$browserName = "Safari";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = $t[1];
@@ -1407,7 +1407,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \((?:iPhone|iPad); .*\) AppleWebKit/[0-9.]*\+{0,1} {1,2}\(KHTML, like Gecko\) Version/([0-9.]*) .*Safari/[0-9.]*%i', $userAgent, $matches)) {
 			$browserName = "Safari";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = $t[1];
@@ -1430,7 +1430,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \(Windows.*\) AppleWebKit/[0-9.]*\+{0,1} \(KHTML,{0,1} like Gecko\) Version/([0-9.]*) Safari/[0-9.]*%i', $userAgent, $matches)) {
 			$browserName = "Safari";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = $t[1];
@@ -1453,7 +1453,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \(.*\) AppleWebKit/[0-9.]*\+{0,1} \(KHTML,{0,1} like Gecko\) Qt/([0-9.]*) Safari/([0-9.]*)%i', $userAgent, $matches)) {
 			$browserName = "Safari";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = $t[1];
@@ -1476,7 +1476,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \(Macintosh; .*\) AppleWebKit/[0-9.]*\+{0,1} \(like Gecko\) Safari/([0-9.]*)%i', $userAgent, $matches)) {
 			$browserName = "Safari";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = 0;
@@ -1499,7 +1499,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \((?:iPhone|iPad); .*\) AppleWebKit/([0-9.]*) \(KHTML, like Gecko\) Mobile/[0-9.A-Za-z]*%i', $userAgent)) {
 			$browserName = "Mobile Safari";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = $t[1];
@@ -1522,7 +1522,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \((?:.(?!android))*\) AppleWebKit/[0-9.]*\+{0,1} \(KHTML,{0,1} like Gecko\).*1Password/([0-9.]*).*Safari/[0-9.]*%i', $userAgent, $matches)) {
 			$browserName = "1Password";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = $t[1];
@@ -1545,7 +1545,7 @@ class parseUserAgentStringClass {
 		elseif ($this->mypreg_match('%Mozilla/[0-9.]* \((?:.(?!android))*\) AppleWebKit/[0-9.]*\+{0,1} \(KHTML,{0,1} like Gecko\).*Safari/([0-9.]*)%i', $userAgent, $matches)) {
 			$browserName = "Safari";
 
-			$t = explode(".", trim($matches[1]));
+			$t = array_pad(explode(".", trim($matches[1])),4,'');
 
 			$this->rawVersion['major'] = $t[0];
 			$this->rawVersion['minor'] = $t[1];
