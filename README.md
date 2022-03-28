@@ -58,4 +58,4 @@ This module uses the IP2Location database from: http://www.ip2location.com. This
 This module uses DragScroll a JavaScript available from: http://github.com/asvd/dragscroll. Dragscroll adds the ability in view mode **Day** to drag the records horizontally with the mouse pointer.
 
 ## User-Agent-Parser
-This module uses the PHP class User-Agent-Parser available from: http://www.toms-world.org/blog/parseuseragentstring/. This class is required to filter out the browser type and operating system from the server request.
+This module uses the PHP class User-Agent-Parser available from: https://github.com/trparky/User-Agent-Parser. This class is required to filter out the browser type and operating system from the server request.
