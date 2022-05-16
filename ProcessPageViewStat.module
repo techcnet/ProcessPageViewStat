@@ -7,7 +7,7 @@
  * @author tech-c.net
  * @license Licensed under GNU/GPL v2
  * @link https://tech-c.net/posts/page-view-statistic-for-processwire/
- * @version 1.1.5
+ * @version 1.1.6
  * 
  * @see Forum Thread: https://processwire.com/talk/topic/24189-pageviewstatistic-for-processwire/
  * @see Donate: https://tech-c.net/donation/
@@ -386,7 +386,7 @@ class ProcessPageViewStat extends Process {
    * Prepares the data before being stored in the database
    */
   private function prepare_record($vt, $request, $origin) {
-    $ip_addr = getenv('REMOTE_ADDR');
+    $ip_addr = (!empty($_SERVER['REMOTE_ADDR'])) ? $_SERVER['REMOTE_ADDR'] : getenv('REMOTE_ADDR');
     if ($ip_addr == '') return;
 
     require_once(__DIR__.'/func/IP2Location.php');
