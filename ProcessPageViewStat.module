@@ -52,7 +52,7 @@ class ProcessPageViewStat extends Process {
       'summary' => 'Logs page views of the CMS.',
       'href' => 'https://tech-c.net/posts/page-view-statistic-for-processwire/',
       'author' => 'tech-c.net',
-      'version' => 115,
+      'version' => 116,
       'icon' => 'signal',
       'permission' => self::PagePermission,
       'autoload' => true,
