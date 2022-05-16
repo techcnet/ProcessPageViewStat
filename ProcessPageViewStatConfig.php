@@ -7,7 +7,7 @@
  * @author tech-c.net
  * @license Licensed under GNU/GPL v2
  * @link https://tech-c.net/posts/page-view-statistic-for-processwire/
- * @version 1.1.5
+ * @version 1.1.6
  * 
  * @see Forum Thread: https://processwire.com/talk/topic/24189-pageviewstatistic-for-processwire/
  * @see Donate: https://tech-c.net/donation/
