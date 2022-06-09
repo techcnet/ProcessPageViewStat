@@ -46,7 +46,7 @@ A new feature in version 1.1.3 offers an internal WHOIS function. In the module 
 !["Internal WHOIS feature"](https://tech-c.net/site/assets/files/1188/whois.jpg)
 
 ## New in version 1.1.4
-Detailed records can now be exported as CSV-file. The file contains all data of the specified date regardless of the pagination. The button is located at the bottom of the page. I hope someone will find the donation button.
+Detailed records can now be exported as CSV-file. The file contains all data of the specified date regardless of the pagination. The button is located at the bottom of the page.
 
 ## Settings
 You can access the module settings by clicking the Configuration button at the bottom of the records page. The settings page is also available in the menu: Modules->Configure->ProcessPageViewStat.
