@@ -2,6 +2,7 @@
 
 ![GitHub](https://img.shields.io/github/license/techcnet/ProcessPageViewStat)
 ![GitHub Sponsors](https://img.shields.io/github/sponsors/techcnet)
+![GitHub last commit](https://img.shields.io/github/last-commit/techcnet/ProcessPageViewStat)
 
 PageViewStatistic for ProcessWire is a module to log page visits of the CMS. The records including some basic information like IP-address, browser, operating system, requested page and originate page. Please note that this module doesn't claim to be the best or most accurate.
 
