@@ -3,6 +3,7 @@
 ![GitHub](https://img.shields.io/github/license/techcnet/ProcessPageViewStat)
 ![GitHub Sponsors](https://img.shields.io/github/sponsors/techcnet)
 ![GitHub last commit](https://img.shields.io/github/last-commit/techcnet/ProcessPageViewStat)
+[![PHPMD](https://github.com/techcnet/ProcessPageViewStat/actions/workflows/phpmd.yml/badge.svg)](https://github.com/techcnet/ProcessPageViewStat/actions/workflows/phpmd.yml)
 
 PageViewStatistic for ProcessWire is a module to log page visits of the CMS. The records including some basic information like IP-address, browser, operating system, requested page and originate page. Please note that this module doesn't claim to be the best or most accurate.
 
@@ -63,4 +64,3 @@ This module uses DragScroll a JavaScript available from: http://github.com/asvd/
 
 ## User-Agent-Parser
 This module uses the PHP class User-Agent-Parser available from: https://github.com/trparky/User-Agent-Parser. This class is required to filter out the browser type and operating system from the server request.
- 
