@@ -51,7 +51,7 @@ This module uses the IP2Location database from: http://www.ip2location.com. This
 This module uses DragScroll a JavaScript available from: http://github.com/asvd/dragscroll. Dragscroll adds the ability in view mode **Day** to drag the records horizontally with the mouse pointer.
 
 ## PhpUserAgent
-This module uses PhpUserAgent available from: https://github.com/donatj/PhpUserAgent. PhpUserAgent is required to filter out the browser type and operating system from the server request.
+This module uses PhpUserAgent available from: https://github.com/donatj/PhpUserAgent. PhpUserAgent is required to filter out the browser type and platform from the server request.
 
 ## New in version 1.1.0
 A new feature in version 1.1.0 offers the possibility to record user names of logged in visitors. Just activate **Record user names** and **Record loggedin user** in the module settings.
