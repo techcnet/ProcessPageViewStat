@@ -36,10 +36,15 @@ View modes other than **Detailed records** are cached visitor counts which will 
 ## Upgrade from older versions
 Cached visitor counts is new in version 1.0.8. If you just upgraded from an older version you might expire a delay or even an error 500 if you display cached visitor counts. The reason for this is that the cache has to be created from the records. This can take longer if your database contains many records. Sometimes it might hit the maximally execution time. Don't be worry about that and keep reloading the page until the cache is completely created.
 
-## Special Feature
-PageViewStatistic for ProcessWire can record the time a visitor viewed the page. This feature is deactivated by default. To activate open the module configuration page and activate **Record view time**. If activated you will find a new column **S.** in the records which means the time of view in seconds. With every page request, a Javascript code is insert directly after the <body> tag. Every time the visitor switches to another tab or closes the tab, this script reports the number of seconds the tab was visible. The initial page request is recorded only as a hyphen (-).
+## Time of view
+This module can record the time a visitor viewed the page. This feature is deactivated by default. To activate open the module configuration page and activate **Record view time**. If activated you will find a new column **S.** in the records which means the time of view in seconds. With every page request, a Javascript code is insert directly after the <body> tag. Every time the visitor switches to another tab or closes the tab, this script reports the number of seconds the tab was visible. The initial page request is recorded only as a hyphen (-).
 
 !["Time of view"](https://tech-c.net/site/assets/files/1188/time-of-view.jpg)
+
+## Execution time
+Starting with version 1.1.9 this module records the PHP execution time from the initialization of the module till the HTML output in seconds.
+
+!["Execution time"](https://tech-c.net/site/assets/files/1188/execution-time.jpg)
 
 ## Settings
 You can access the module settings by clicking the Configuration button at the bottom of the records page. The settings page is also available in the menu: Modules->Configure->ProcessPageViewStat.
@@ -66,3 +71,6 @@ Detailed records can now be exported as CSV-file. The file contains all data of 
 
 ## New in version 1.1.8
 The UserAgentParser was exchanged with PhpUserAgent due to some complaints.
+
+## New in version 1.1.9
+Added calculation of the PHP execution time.
