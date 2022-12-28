@@ -137,6 +137,7 @@ filter:progid:DXImageTransform.Microsoft.gradient(startColorstr="#6db3f2",endCol
 .pvs_img{
 vertical-align:middle;
 border:0px;
+color-scheme:light dark;
 }
 
 #pvs_update{
