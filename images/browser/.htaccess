@@ -1,0 +1,4 @@
+<IfModule mod_rewrite.c>
+RewriteEngine on
+RewriteRule explorer\.png msie.png
+</IfModule>
